@@ -1,0 +1,20 @@
+three.js 0.160.0 — MIT License
+Copyright (c) 2010-2024 three.js authors
+https://github.com/mrdoob/three.js
+    three.module.js
+    addons/controls/OrbitControls.js
+    addons/loaders/GLTFLoader.js
+    addons/utils/BufferGeometryUtils.js
+    addons/lines/LineSegments2.js
+    addons/lines/LineSegmentsGeometry.js
+    addons/lines/LineMaterial.js
+
+meshoptimizer 1.0.1 — MIT License
+Copyright (c) 2016-2025 Arseny Kapoulkine
+https://github.com/zeux/meshoptimizer
+    addons/libs/meshopt_decoder.module.js
+
+Rapier (@dimforge/rapier3d-compat) 0.19.3 — Apache License 2.0
+Copyright (c) 2019 Sébastien Crozet
+https://github.com/dimforge/rapier
+    rapier.mjs

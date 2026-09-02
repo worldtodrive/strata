@@ -1,0 +1,40 @@
+Strata — third-party components
+================================================================================
+
+MAP DATA
+    © OpenStreetMap contributors.
+    Licensed under the Open Data Commons Open Database License (ODbL) v1.0.
+    https://www.openstreetmap.org/copyright
+    https://opendatacommons.org/licenses/odbl/
+
+ELEVATION
+    Derived from public-domain national survey data.
+
+VEHICLE MODEL
+    "Generic Supercar 'Cheetah'" by mk2design.
+    Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+    https://creativecommons.org/licenses/by/4.0/
+
+RENDERER
+    three.js r160 — MIT License. https://threejs.org
+    Copyright (c) 2010-2024 three.js authors
+
+PHYSICS
+    Rapier 0.19.3 — Apache License 2.0. https://rapier.rs
+    The attributions ship alongside the library in docs/vendor/NOTICE, and the
+    full licence text in docs/vendor/LICENSE-Apache-2.0.txt as §4(a) requires.
+
+================================================================================
+SCOPE
+
+    Everything listed above is third-party, licensed by its own authors under
+    the terms named beside it. The licence on this repository does not change or
+    override any of them.
+
+    The level data is not original work either. Every .glb, .json and .bin file
+    in docs/chunks/ is derived from OpenStreetMap and remains subject to ODbL
+    v1.0, as set out under MAP DATA above.
+
+    Everything else, being the viewer source and the build that produces it, is
+    © 2026 Jeremy Brachle and licensed under the PolyForm Noncommercial License
+    1.0.0. The full terms are in LICENSE.md at the root of this repository.
