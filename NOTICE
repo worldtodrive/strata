@@ -12,12 +12,25 @@ ELEVATION
 
 VEHICLE MODEL
     "Generic Supercar 'Cheetah'" by mk2design.
+    https://sketchfab.com/3d-models/generic-supercar-cheetah
     Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
     https://creativecommons.org/licenses/by/4.0/
+    MODIFIED. The model was converted to glTF, scaled and seated on the vehicle
+    rig, and mesh-compressed for delivery. CC BY 4.0 §3(a)(1)(B) requires a
+    modification to be stated, and the link above is the §3(a)(1)(A) source.
 
 RENDERER
     three.js r160 — MIT License. https://threejs.org
     Copyright (c) 2010-2024 three.js authors
+    Full text in docs/vendor/LICENSE-MIT.txt. MIT requires the permission notice
+    to travel with the code, not just the copyright line.
+
+MESH COMPRESSION
+    meshoptimizer 1.0.1 — MIT License. https://github.com/zeux/meshoptimizer
+    Copyright (c) 2016-2025 Arseny Kapoulkine
+    Full text in docs/vendor/LICENSE-MIT.txt, as above.
+    Every .glb in docs/chunks/ is meshopt-compressed, so the decoder that ships
+    in docs/vendor/addons/libs/ is required to load them at all.
 
 PHYSICS
     Rapier 0.19.3 — Apache License 2.0. https://rapier.rs

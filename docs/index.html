@@ -13,11 +13,11 @@
 <meta property="og:site_name" content="Strata">
 <meta property="og:title" content="Strata">
 <meta property="og:description" content="A driving demo built on real streets. Two levels in Dallas, in your browser, no install.">
-<meta property="og:url" content="https://project-strata.pages.dev/">
-<meta property="og:image" content="https://project-strata.pages.dev/og.png">
+<meta property="og:url" content="https://drivestrata.io/">
+<meta property="og:image" content="https://drivestrata.io/og.png">
 <meta property="og:image:alt" content="A driving demo built on real streets. Two levels in Dallas, in your browser, no install.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://project-strata.pages.dev/og.png">
+<meta name="twitter:image" content="https://drivestrata.io/og.png">
 <meta name="twitter:title" content="Strata">
 <meta name="twitter:description" content="A driving demo built on real streets. Two levels in Dallas, in your browser, no install.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -657,16 +657,27 @@
 					Any controller the browser reports as a standard gamepad works.</p>
 			</section>
 			<section id="page-about">
-				<h3>credits</h3>
+				<h3>about</h3>
+				<p>Strata sits on the boundary between cozy driving game and geospatial
+					simulation with an ambitious goal: drive anywhere in the world at 1:1
+					scale using open data and procedural generation.</p>
+				<p>Here in this initial demo you can drive two levels rendered in the
+					Dallas, TX area:</p>
+				<p>1. High Five Interchange (US-75 x I-635)<br>
+					2. The Village neighborhood</p>
+								<h3>credits</h3>
 				<p>Map data &copy; <a href="https://www.openstreetmap.org/copyright"
 					>OpenStreetMap</a> contributors, licensed under the
 					<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>.
 					Elevation from public-domain national survey data.</p>
-				<p><b>Generic Supercar &lsquo;Cheetah&rsquo;</b> by <b>mk2design</b>,
-					licensed under
-					<a href="https://creativecommons.org/licenses/by/4.0/">CC&nbsp;BY&nbsp;4.0</a>.</p>
+				<p><b>Generic Supercar &lsquo;Cheetah&rsquo;</b> by <b>mk2design</b>, from
+					<a href="https://sketchfab.com/3d-models/generic-supercar-cheetah"
+					>Sketchfab</a>, licensed under
+					<a href="https://creativecommons.org/licenses/by/4.0/">CC&nbsp;BY&nbsp;4.0</a>
+					and modified for this game.</p>
 				<p class="dim">Rendered with <b>three.js</b> r160 (MIT) and
-					<b>Rapier</b> 0.19.3 (Apache-2.0).</p>
+					<b>Rapier</b> 0.19.3 (Apache-2.0). Full licence texts ship in
+					vendor/ alongside the libraries.</p>
 			</section>
 
 		</div>
@@ -732,7 +743,7 @@
 		window.driveMenu = api;
 
 		window.addEventListener('keydown', function (e) {
-			if (e.key === 'Escape' && api.isOpen()) { api.close(); e.preventDefault(); }
+			if (e.key === 'Escape') { api.toggle(); e.preventDefault(); }
 		});
 
 		var shown = 0;
