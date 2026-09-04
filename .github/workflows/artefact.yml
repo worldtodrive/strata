@@ -1,0 +1,86 @@
+# Validates the artefact in docs/ before and after it ships.
+#
+# WHAT THIS PROVES
+#   The files served from https://drivestrata.io fit their hosting limits, carry
+#   a policy that forbids the page from contacting anything but its own origin,
+#   ship the licence texts they are legally obliged to ship, contain no secrets,
+#   and vendor three third-party libraries that are byte-identical to the
+#   versions their authors published.
+#
+# WHAT THIS DOES NOT PROVE
+#   Nothing about the pipeline that generates docs/. That pipeline is a separate,
+#   private repository with its own test suite, and none of it runs here. This
+#   workflow reads the output and knows nothing about how it was made. A defect
+#   that produces a plausible-looking but wrong city passes every check below.
+#
+#   Saying so is not a disclaimer bolted on afterwards. A CI that implies more
+#   than it tests is worth less than one that states its own edges, because the
+#   first thing a sceptical reader does is look for the gap between the claim
+#   and the checks.
+#
+# The checks themselves are in features/artefact/, written in Gherkin so they
+# can be read without reading the JavaScript that runs them.
+
+name: artefact
+
+on:
+  # Scoping the push trigger to the default branch is what stops every commit on
+  # a pull request producing two identical runs, one for the push and one for
+  # the pull request.
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: artefact-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Validate the shipped artefact
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          # The secret scan reads history, not just the working tree.
+          fetch-depth: 0
+
+      # Deliberately before anything is installed or downloaded, so the scan sees
+      # the repository as checked out and nothing else. .gitleaks.toml also
+      # excludes the two directories a local run would create, so this behaves
+      # the same on a developer's machine.
+      #
+      # Pinned rather than floating: a scanner that changes under you turns a
+      # green history into a meaningless one.
+      - name: Scan for secrets
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          echo "Working tree:"
+          ./gitleaks dir . --redact --no-banner
+          echo "History:"
+          ./gitleaks git . --redact --no-banner
+          rm -f gitleaks
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install the test runner
+        run: npm ci
+
+      # Payload limits, isolation, provenance, licences, vulnerabilities.
+      - name: Check the artefact
+        run: npm run test:artefact

@@ -1,0 +1,20 @@
+{
+  "name": "strata-checks",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Checks that validate the artefact shipped in docs/, and smoke tests against the live site. Written in Gherkin so what is checked can be read without reading the code that runs it.",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "scripts": {
+    "test": "cucumber-js --profile artefact",
+    "test:artefact": "cucumber-js --profile artefact",
+    "test:live": "cucumber-js --profile live"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "13.2.1",
+    "playwright": "1.62.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

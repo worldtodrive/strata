@@ -1,0 +1,79 @@
+# Smoke tests against the deployed site at https://drivestrata.io.
+#
+# WHY THIS IS SEPARATE FROM artefact.yml
+#   Everything here depends on things that are not facts about this repository:
+#   whether Cloudflare is serving, whether Sketchfab feels like answering a
+#   build server today, whether this runner's address is being rate limited.
+#   Mixing those into the per-commit build would mean a red badge on a perfectly
+#   good commit, and a badge that is red for reasons nobody can act on is a
+#   badge everybody learns to ignore.
+#
+#   So it runs once a day instead. The site is a portfolio demo, not a service
+#   with an availability target, and a day is a reasonable time to find out that
+#   something has fallen over.
+#
+# WHAT THIS PROVES
+#   That the site is up, that the security headers survived the trip to
+#   production, that it still names itself consistently for search engines,
+#   that the licence attribution links have not rotted, and — the only check
+#   here that costs anything — that a real browser can load the page and reach a
+#   running world. "The server answered" and "the thing works" are different
+#   claims and this workflow makes both of them separately.
+#
+# The checks themselves are in features/live/.
+
+name: live
+
+on:
+  schedule:
+    # 09:17 UTC daily. An odd minute because the top of the hour is congested.
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+  # GitHub honours `schedule` and `workflow_dispatch` only for workflow files
+  # that are already on the default branch, so neither trigger above can be
+  # exercised from a pull request. This one can. It runs the live suite whenever
+  # the live suite itself changes, which serves twice over: it proves the
+  # workflow works before it is ever merged, and afterwards it keeps anyone
+  # editing these tests honest about whether they still pass.
+  pull_request:
+    paths:
+      - 'features/live/**'
+      - 'features/support/live.steps.mjs'
+      - 'features/support/shared.mjs'
+      - '.github/workflows/live.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Smoke test the live site
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # The suite compares the policy served in production against the one
+      # declared in the artefact, and reads the attribution URLs out of NOTICE
+      # and the page, so it does need the repository — just not its history.
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install the test runner
+        run: npm ci
+
+      - name: Install a browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test the live site
+        run: npm run test:live

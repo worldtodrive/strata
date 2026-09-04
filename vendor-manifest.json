@@ -1,0 +1,92 @@
+{
+  "_comment": [
+    "Every third-party file shipped in docs/vendor/, and where upstream it came from.",
+    "",
+    "The sha256 values here are a pin, not the proof. A hash committed to this repo",
+    "only proves a file has not changed since someone wrote the hash down; it cannot",
+    "prove the file is unmodified upstream, because whoever modified it could have",
+    "written down the modified hash. So the check in",
+    "features/artefact/provenance.feature downloads the named package from the npm",
+    "registry on every run and compares bytes against that. The hashes below make a",
+    "silent substitution of the local file fail loudly and immediately, before the",
+    "download; they are the fast half of a two-part check.",
+    "",
+    "Note the one rename: the meshopt decoder ships under a .module.js name in a",
+    "three.js addons directory, but it is meshoptimizer's own file, not three.js's",
+    "bundled copy. The comparison is therefore by content and never by path."
+  ],
+  "packages": {
+    "three@0.160.0": {
+      "registry": "https://registry.npmjs.org/three/-/three-0.160.0.tgz",
+      "licence": "MIT",
+      "homepage": "https://threejs.org"
+    },
+    "@dimforge/rapier3d-compat@0.19.3": {
+      "registry": "https://registry.npmjs.org/@dimforge/rapier3d-compat/-/rapier3d-compat-0.19.3.tgz",
+      "licence": "Apache-2.0",
+      "homepage": "https://rapier.rs",
+      "note": "The WebAssembly module is base64-embedded inside rapier.mjs, which is why no .wasm file ships separately and why that one file is 2.2 MB."
+    },
+    "meshoptimizer@1.0.1": {
+      "registry": "https://registry.npmjs.org/meshoptimizer/-/meshoptimizer-1.0.1.tgz",
+      "licence": "MIT",
+      "homepage": "https://github.com/zeux/meshoptimizer"
+    }
+  },
+  "files": [
+    {
+      "path": "docs/vendor/three.module.js",
+      "package": "three@0.160.0",
+      "upstream": "build/three.module.js",
+      "sha256": "76dea8151bc9352aef3528b4262e249b2604f62543828328db978d060d61a495"
+    },
+    {
+      "path": "docs/vendor/rapier.mjs",
+      "package": "@dimforge/rapier3d-compat@0.19.3",
+      "upstream": "rapier.mjs",
+      "sha256": "bce2c762b440101ebf8cbff038a71fe1884488becd0a53b9a7c0a7e3daf13a2b"
+    },
+    {
+      "path": "docs/vendor/addons/controls/OrbitControls.js",
+      "package": "three@0.160.0",
+      "upstream": "examples/jsm/controls/OrbitControls.js",
+      "sha256": "5a44a9e86a2a0fb11933eed69bc2cd33c76a496854c1aed6ed776efa87d7b064"
+    },
+    {
+      "path": "docs/vendor/addons/loaders/GLTFLoader.js",
+      "package": "three@0.160.0",
+      "upstream": "examples/jsm/loaders/GLTFLoader.js",
+      "sha256": "d073b438e6a07e1359741dd5d6c76c953420cc0d4fd84eb1bdde94315540e6a3"
+    },
+    {
+      "path": "docs/vendor/addons/utils/BufferGeometryUtils.js",
+      "package": "three@0.160.0",
+      "upstream": "examples/jsm/utils/BufferGeometryUtils.js",
+      "sha256": "9be041e96308775d00e2695cc607645b9a9b64fd7c0e759dd8f7c00a8d92becb"
+    },
+    {
+      "path": "docs/vendor/addons/libs/meshopt_decoder.module.js",
+      "package": "meshoptimizer@1.0.1",
+      "upstream": "meshopt_decoder.mjs",
+      "sha256": "97901fb3d2d296eeea2a57348a734ef0a17e35f2d4aea5a65223635d3f0e1709"
+    },
+    {
+      "path": "docs/vendor/addons/lines/LineMaterial.js",
+      "package": "three@0.160.0",
+      "upstream": "examples/jsm/lines/LineMaterial.js",
+      "sha256": "eed69bd471547ca0d15e0e87722530317d5d514f533585948086515c5f308234"
+    },
+    {
+      "path": "docs/vendor/addons/lines/LineSegments2.js",
+      "package": "three@0.160.0",
+      "upstream": "examples/jsm/lines/LineSegments2.js",
+      "sha256": "5009e85ffbd09e86003509f7d1001642cfe7594d42192facdde516fcd4418d24"
+    },
+    {
+      "path": "docs/vendor/addons/lines/LineSegmentsGeometry.js",
+      "package": "three@0.160.0",
+      "upstream": "examples/jsm/lines/LineSegmentsGeometry.js",
+      "sha256": "59419cee5eccbaacfab5939871308ee262a63761815f72ff49cbd217fd84fdb7"
+    }
+  ]
+}
