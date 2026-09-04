@@ -2,10 +2,13 @@
 
 <img width="1017" height="692" alt="title" src="https://github.com/user-attachments/assets/63102952-01cb-444c-b09e-b316fc3d6bfe" />
 
+<<<<<<< HEAD
 [![artefact](https://github.com/worldtodrive/strata/actions/workflows/artefact.yml/badge.svg)](https://github.com/worldtodrive/strata/actions/workflows/artefact.yml)
 [![live](https://github.com/worldtodrive/strata/actions/workflows/live.yml/badge.svg)](https://github.com/worldtodrive/strata/actions/workflows/live.yml)
 
 
+=======
+>>>>>>> origin/main
 This project sits on the boundary between cozy driving game and geospatial simulation with an ambitious goal: drive anywhere in the world at 1:1 scale using open data and procedural generation.
 
 Starting with familiar locations in Dallas, TX that I knew from my time living there in undergrad, I plan to highlight various drivable levels of cities that I personally know as POCs of the system before scaling more globally.
@@ -18,6 +21,10 @@ For the first release, there are two demo levels (both in Dallas):
 
 * https://drivestrata.io
 
+## Gameplay videos
+
+* High Five demo: https://youtu.be/78zMxEKLvZI
+* Long play: https://www.youtube.com/watch?v=hPio080D7rY
 
 ## What is checked
 
