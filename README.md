@@ -1,7 +1,10 @@
 # Strata
 
+<img width="1017" height="692" alt="title" src="https://github.com/user-attachments/assets/63102952-01cb-444c-b09e-b316fc3d6bfe" />
+
 [![artefact](https://github.com/worldtodrive/strata/actions/workflows/artefact.yml/badge.svg)](https://github.com/worldtodrive/strata/actions/workflows/artefact.yml)
 [![live](https://github.com/worldtodrive/strata/actions/workflows/live.yml/badge.svg)](https://github.com/worldtodrive/strata/actions/workflows/live.yml)
+
 
 This project sits on the boundary between cozy driving game and geospatial simulation with an ambitious goal: drive anywhere in the world at 1:1 scale using open data and procedural generation.
 
