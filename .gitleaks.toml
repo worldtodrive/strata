@@ -7,9 +7,11 @@
 # repository at all. Both are gitignored, both exist only after a local test run,
 # and both hold third-party code that arrives over the network:
 #
-#   node_modules/  the test runner and its dependencies
-#   .cache/        upstream packages downloaded to be compared byte for byte
-#                  against docs/vendor/, which is what provenance.feature does
+#   ci/node_modules/  the test runner and its dependencies
+#   ci/.cache/        upstream packages downloaded to be compared byte for byte
+#                     against docs/vendor/, which is what provenance.feature does
+#
+# The patterns are unanchored so they hold wherever those directories appear.
 #
 # Scanning them turns up minified upstream JavaScript containing long
 # alphanumeric runs that pattern-match as credentials and are not — the parser
@@ -23,6 +25,6 @@ useDefault = true
 [[allowlists]]
 description = "Gitignored directories: dependencies and the upstream download cache"
 paths = [
-  '''^node_modules/''',
-  '''^\.cache/''',
+  '''(^|/)node_modules/''',
+  '''(^|/)\.cache/''',
 ]

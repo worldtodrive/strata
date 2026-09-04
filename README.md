@@ -30,7 +30,7 @@ For the first release, there are two demo levels (both in Dallas):
 
 This repository is a build output: the files served at drivestrata.io, and
 nothing else. Two workflows run against it. Both are meant to be read — the
-checks are plain-English `.feature` files under `features/`, so what is asserted
+checks are plain-English `.feature` files under `ci/features/`, so what is asserted
 can be seen without reading the code that asserts it.
 
 **On every commit** — [`artefact.yml`](.github/workflows/artefact.yml)
@@ -79,11 +79,17 @@ is sent, and nothing leaves. It is the only foreign origin the page touches.
 ### Running the checks yourself
 
 ```sh
+cd ci
 npm ci
 npm run test:artefact              # reads docs/, no browser needed
 npx playwright install chromium
 npm run test:live                  # asks the live site
 ```
+
+The tooling sits in `ci/` rather than at the root on purpose. A `package.json`
+at the root makes the host's build system treat this as a Node project and
+install its dependencies before deploying, which would put the test runner
+between a commit and the live site. Nothing in `ci/` is involved in deploying.
 
 ## Licence
 

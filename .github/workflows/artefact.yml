@@ -72,15 +72,23 @@ jobs:
           ./gitleaks git . --redact --no-banner
           rm -f gitleaks
 
+      # The test tooling lives in ci/ rather than at the repository root. That is
+      # deliberate: a package.json at the root makes the host's build system
+      # treat this as a Node project and install its dependencies before
+      # deploying, which puts the test runner between a commit and the live site.
+      # Nothing under ci/ is involved in deploying.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: ci/package-lock.json
 
       - name: Install the test runner
+        working-directory: ci
         run: npm ci
 
       # Payload limits, isolation, provenance, licences, vulnerabilities.
       - name: Check the artefact
+        working-directory: ci
         run: npm run test:artefact

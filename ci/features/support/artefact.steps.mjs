@@ -9,12 +9,14 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 import {
-	ROOT, SITE, MAX_FILE_BYTES,
+	CI, SITE, MAX_FILE_BYTES,
 	abs, read, exists, walk, firstPartyScripts,
 	declaredHeaders, parseCsp, urlsIn, bytes,
 } from './shared.mjs';
 
-const CACHE = path.join(ROOT, '.cache', 'upstream');
+// Downloads land beside the tooling that fetches them, not at the repository
+// root, which stays free of anything the checks generate.
+const CACHE = path.join(CI, '.cache', 'upstream');
 
 Given('the shipped artefact', function () {
 	assert.ok(fs.existsSync(SITE), 'docs/ is missing — there is no artefact to check');
@@ -243,7 +245,7 @@ Then('no pinned library has a known vulnerability', function () {
 Then('the declared dependencies have no known vulnerabilities at high severity or above', function () {
 	let report;
 	try {
-		report = execFileSync('npm', ['audit', '--json'], { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' });
+		report = execFileSync('npm', ['audit', '--json'], { cwd: CI, encoding: 'utf8', stdio: 'pipe' });
 	} catch (err) {
 		// npm audit exits non-zero when it finds anything at all, including the
 		// low-severity findings this step deliberately tolerates.

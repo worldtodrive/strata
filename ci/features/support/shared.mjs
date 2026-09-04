@@ -7,7 +7,13 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-export const ROOT = path.resolve(here, '..', '..');
+// The test tooling lives in ci/ rather than at the repository root, and that
+// placement is load-bearing: the host's build system treats a package.json at
+// the root as "this is a Node project to install before deploying", which put
+// the test runner's dependencies between a commit and the deployed site. There
+// is nothing to detect now, so deploying is unaffected by anything in here.
+export const CI = path.resolve(here, '..', '..');
+export const ROOT = path.resolve(CI, '..');
 export const SITE = path.join(ROOT, 'docs');
 export const ORIGIN = 'https://drivestrata.io';
 

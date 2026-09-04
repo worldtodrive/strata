@@ -38,9 +38,9 @@ on:
   # editing these tests honest about whether they still pass.
   pull_request:
     paths:
-      - 'features/live/**'
-      - 'features/support/live.steps.mjs'
-      - 'features/support/shared.mjs'
+      - 'ci/features/live/**'
+      - 'ci/features/support/live.steps.mjs'
+      - 'ci/features/support/shared.mjs'
       - '.github/workflows/live.yml'
 
 permissions:
@@ -63,17 +63,24 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
+      # The test tooling lives in ci/, away from the repository root, so that the
+      # host's build system does not see a Node project here and install it
+      # before deploying. See the same note in artefact.yml.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: ci/package-lock.json
 
       - name: Install the test runner
+        working-directory: ci
         run: npm ci
 
       - name: Install a browser
+        working-directory: ci
         run: npx playwright install --with-deps chromium
 
       - name: Smoke test the live site
+        working-directory: ci
         run: npm run test:live
