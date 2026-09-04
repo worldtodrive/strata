@@ -3,3 +3,7 @@ Thumbs.db
 desktop.ini
 *:Zone.Identifier
 .wrangler/
+
+# CI checks (see .github/workflows/) — dependencies and their download cache
+node_modules/
+.cache/

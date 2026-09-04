@@ -1,0 +1,30 @@
+# Secret-scanning configuration.
+#
+# The default rule set is used in full. Nothing is disabled, no rule is relaxed,
+# and no committed file is exempt.
+#
+# The single allowance is for two directories that are not part of this
+# repository at all. Both are gitignored, both exist only after a local test run,
+# and both hold third-party code that arrives over the network:
+#
+#   ci/node_modules/  the test runner and its dependencies
+#   ci/.cache/        upstream packages downloaded to be compared byte for byte
+#                     against docs/vendor/, which is what provenance.feature does
+#
+# The patterns are unanchored so they hold wherever those directories appear.
+#
+# Scanning them turns up minified upstream JavaScript containing long
+# alphanumeric runs that pattern-match as credentials and are not — the parser
+# tables inside three.js, for one. Excluding code that was never committed here
+# is not the same as excluding code from the scan's reach; everything this
+# repository actually ships is still scanned, in the working tree and in history.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Gitignored directories: dependencies and the upstream download cache"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.cache/''',
+]
