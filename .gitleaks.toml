@@ -1,9 +1,0 @@
-[extend]
-useDefault = true
-
-[[allowlists]]
-description = "Gitignored directories: dependencies and the upstream download cache"
-paths = [
-  '''(^|/)node_modules/''',
-  '''(^|/)\.cache/''',
-]

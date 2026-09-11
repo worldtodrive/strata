@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Checks that validate the artefact shipped in docs/, and smoke tests against the live site. Written in Gherkin so what is checked can be read without reading the code that runs it.",
+  "description": "",
   "license": "SEE LICENSE IN LICENSE.md",
   "scripts": {
     "test": "cucumber-js --profile artefact",
