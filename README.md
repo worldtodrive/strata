@@ -8,7 +8,7 @@ Starting with familiar locations in Dallas, TX that I knew from my time living t
 
 For the first release, there are three demo levels (all in Dallas):
 1. High Five overpass system (US-75 x I-635)
-2. Southern Methodist Universrity
+2. Southern Methodist University
 3. The Village neighborhood
 
 # Playable Demo here:
