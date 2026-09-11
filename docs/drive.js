@@ -3463,7 +3463,7 @@ function toggleNeon() {
 	}).catch((err) => {
 		neonOn = false;
 		console.warn('[neon] toggle failed:', err);
-		status('neon outlines failed — see the console');
+		status('neon outlines failed');
 	}).finally(() => { neonBusy = false; });
 }
 
@@ -3606,11 +3606,8 @@ function setHTML(el, html, name) {
 		for (const [k, n] of domWrites) {
 			if (n > DOM_WRITE_WARN && !domWarned.has(k)) {
 				domWarned.add(k);
-				console.warn(`[dom] ${k} rewrote ${n} times in a second `
-					+ `(budget ${DOM_WRITE_WARN}). An innerHTML write is a parse, a style `
-					+ `recalc and a layout -- this will stutter the world. Throttle it, or `
-					+ `round the value it prints so the unchanged-text guard can work.`);
-				status(`${k} is rewriting ${n}x/s — see the console`);
+				console.warn(`[dom] ${k} rewrote ${n} times in a second `);
+				status(`${k} is rewriting ${n}x/s`);
 			}
 		}
 		domWrites.clear();
