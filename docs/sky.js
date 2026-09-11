@@ -260,7 +260,7 @@ export const STYLES = {
 
 	'first-pass': {
 		label: 'first pass',
-		blurb: 'The sky you approved. Hemisphere ambient only, smooth shading, bench greys.',
+		blurb: 'The sky you approved. Hemisphere ambient only, smooth shading, bench grays.',
 		day: {},
 		env: 0,
 		flat: false,
@@ -271,7 +271,7 @@ export const STYLES = {
 
 	sunlit: {
 		label: 'sunlit',
-		blurb: 'Image-based ambient, strong key, saturated world tones. Colour that holds its '
+		blurb: 'Image-based ambient, strong key, saturated world tones. Color that holds its '
 			+ 'shadows instead of washing out.',
 		day: {
 			sunIntensity: 4.0,

@@ -3,7 +3,7 @@
 export const WORLD_TONES = {
 
 	bench: {
-		label: 'bench greys',
+		label: 'bench grays',
 		road: 0x8d939c, slab: 0x5f646b, ground: 0x6f7a63, junctions: 0x9aa0a8,
 		paint: 0xd8d8d0, surfaces: 0xb4ac96, buildings: 0x7d7f86,
 		garages: 0x8f9089,

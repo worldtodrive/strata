@@ -10,6 +10,8 @@ const WATER_COLOR = 0x21506e;
 
 const INNER_EPS_M = 0.25;
 
+const SHORE_CLEAR_M = 0.15;
+
 const BUCKETS = 64;
 
 function prepare(ring) {
@@ -110,6 +112,113 @@ export function dropCoverInWater(root, rings) {
 		}
 	});
 	return dropped;
+}
+
+export function clipGroundToWater(root, rings, { level = null } = {}) {
+	if (!rings || !rings.polygons || !rings.polygons.length) {
+		return { dropped: 0, clipped: 0, before: 0, after: 0 };
+	}
+	let dropped = 0;
+	let clipped = 0;
+	let before = 0;
+	let after = 0;
+
+	root.traverse((object) => {
+		if (!object.isMesh || !object.geometry) return;
+		const geometry = object.geometry;
+		const position = geometry.getAttribute('position');
+		if (!position) return;
+
+		const names = Object.keys(geometry.attributes);
+		const attributes = names.map((n) => geometry.getAttribute(n));
+		const positionSlot = names.indexOf('position');
+		if (positionSlot < 0) return;
+		const out = names.map(() => []);
+
+		const index = geometry.index;
+		const count = index ? index.count : position.count;
+		const read = index ? (i) => index.getX(i) : (i) => i;
+		before += count / 3;
+
+		const vertexAt = (v) => attributes.map((attr) => {
+			const items = new Array(attr.itemSize);
+			for (let k = 0; k < attr.itemSize; k++) {
+				items[k] = attr.array[v * attr.itemSize + k];
+			}
+			return items;
+		});
+		const lerp = (p, q, t) => p.map(
+			(items, a) => items.map((value, k) => value + (q[a][k] - value) * t));
+		const emit = (p) => {
+			for (let a = 0; a < out.length; a++) {
+				for (let k = 0; k < p[a].length; k++) out[a].push(p[a][k]);
+			}
+		};
+
+		const cache = new Map();
+		const inRing = (v) => {
+			let seen = cache.get(v);
+			if (seen === undefined) {
+				seen = isWet(position.array[v * 3], position.array[v * 3 + 2], rings);
+				cache.set(v, seen);
+			}
+			return seen;
+		};
+
+		for (let t = 0; t < count; t += 3) {
+			const ia = read(t), ib = read(t + 1), ic = read(t + 2);
+
+			if (!(inRing(ia) || inRing(ib) || inRing(ic))) {
+				emit(vertexAt(ia)); emit(vertexAt(ib)); emit(vertexAt(ic));
+				continue;
+			}
+			const A = vertexAt(ia), B = vertexAt(ib), C = vertexAt(ic);
+			if (level === null) { dropped++; continue; }
+			const verts = [A, B, C];
+
+			const cut = level + SHORE_CLEAR_M;
+			const d = [A[positionSlot][1] - cut,
+				B[positionSlot][1] - cut,
+				C[positionSlot][1] - cut];
+			if (d[0] <= 0 && d[1] <= 0 && d[2] <= 0) { dropped++; continue; }
+
+			if (d[0] >= 0 && d[1] >= 0 && d[2] >= 0) {
+				emit(A); emit(B); emit(C);
+				continue;
+			}
+
+			const poly = [];
+			for (let i = 0; i < 3; i++) {
+				const j = (i + 1) % 3;
+				if (d[i] >= 0) poly.push(verts[i]);
+				if ((d[i] >= 0) !== (d[j] >= 0)) {
+					poly.push(lerp(verts[i], verts[j], d[i] / (d[i] - d[j])));
+				}
+			}
+			for (let i = 1; i + 1 < poly.length; i++) {
+				emit(poly[0]); emit(poly[i]); emit(poly[i + 1]);
+			}
+			clipped++;
+		}
+
+		after += out[positionSlot].length / 9;
+		geometry.setIndex(null);
+		for (let a = 0; a < names.length; a++) {
+			const itemSize = attributes[a].itemSize;
+			const array = new Float32Array(out[a]);
+			if (names[a] === 'normal') {
+				for (let v = 0; v < array.length; v += 3) {
+					const n = Math.hypot(array[v], array[v + 1], array[v + 2]) || 1;
+					array[v] /= n; array[v + 1] /= n; array[v + 2] /= n;
+				}
+			}
+			geometry.setAttribute(names[a],
+				new THREE.BufferAttribute(array, itemSize));
+		}
+		geometry.computeBoundingBox();
+		geometry.computeBoundingSphere();
+	});
+	return { dropped, clipped, before, after };
 }
 
 export function waterLevel(meta) {
@@ -262,7 +371,7 @@ export function createWater(scene, meta, rings) {
 	}
 	buildRings();
 
-	let kind = 'plane';
+	let kind = (rings && rings.polygons && rings.polygons.length) ? 'rings' : 'plane';
 	let visible = true;
 
 	function applyKind() {

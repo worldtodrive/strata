@@ -257,7 +257,7 @@ export const CAMERAS = {
 		label: 'chase · 37°',
 		note: 'the standard chase view with nothing changed but the angle -- a fixed 37 '
 			+ 'degrees down at every zoom, instead of 26 falling away to 8. Same boom, same '
-			+ 'filters, same lens behaviour, so it rides exactly as chase does.',
+			+ 'filters, same lens behavior, so it rides exactly as chase does.',
 		back: 7.0, up: 4.4, lag: 6.0, lagY: 3.0, lookLag: 8.0, lookLagY: 4.0,
 
 		tiltNear: 37, tiltFar: 37, zoomNear: 0.30, zoomFar: 6.00,
@@ -270,7 +270,7 @@ export const CAMERAS = {
 		label: 'stiff · loose',
 		note: 'the stiff camera angle and fixed lens on a chase-view filter. The boom trails '
 			+ 'and swings through a corner, which is also what stops the car jittering when '
-			+ 'you zoom right in. Still centred while you orbit with K.',
+			+ 'you zoom right in. Still centered while you orbit with K.',
 
 		back: 6.0, up: 2.8, lag: 6.0, lagY: 3.0, lookLag: 8.0, lookLagY: 4.0,
 
@@ -322,7 +322,7 @@ export const CAMERAS = {
 	chasea: {
 		label: 'chase A · snap at 1.7x',
 		note: '38 degrees zoomed in, snapping to 42 as you pull past 1.7x. Car at 48% below '
-			+ 'centre -- about three quarters of the way down the glass -- and pinned there '
+			+ 'center -- about three quarters of the way down the glass -- and pinned there '
 			+ 'through any zoom, lens or throttle input.',
 		back: 7.0, up: 3.4, lag: 6.0, lagY: 3.0, lookLag: 8.0, lookLagY: 4.0,
 		tiltNear: 38, tiltFar: 42, zoomNear: 1.55, zoomFar: 1.85,
@@ -348,7 +348,7 @@ export const CAMERAS = {
 	std: {
 		label: 'chase', v2: true,
 		note: 'a standard third-person chase view. 19 degrees down, the car a little below '
-			+ 'centre, and the angle is the same at every zoom. The boom trails behind the '
+			+ 'center, and the angle is the same at every zoom. The boom trails behind the '
 			+ 'car through a bend; the aim never leaves it.',
 		back: 6.0, up: 2.67,
 		omega: 7.0, omegaY: 6.0, lookLag: 20.0,

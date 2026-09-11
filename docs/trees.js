@@ -10,6 +10,9 @@ const TRUNK_DRAW_M = 300;
 const H_JITTER_LO = 0.82;
 const H_JITTER_SPAN = 0.36;
 
+const LEAN_DEG = 3;
+const LEAN_JITTER = 0.6;
+
 function mergeParts(parts) {
 	const pos = [];
 	const nrm = [];
@@ -97,6 +100,49 @@ function pyramidalCanopy() {
 	]);
 }
 
+function alleeCanopy() {
+	const parts = [
+
+		{ geo: ico(), m: mat4(v3(0, 0.60, 0.05), v3(0.27, 0.145, 0.25)) },
+		{ geo: ico(), m: mat4(v3(0, 0.565, 0.20), v3(0.23, 0.115, 0.22), 0.25) },
+		{ geo: ico(), m: mat4(v3(0, 0.52, 0.31), v3(0.185, 0.095, 0.175), -0.2) },
+
+		{ geo: ico(), m: mat4(v3(0.22, 0.575, 0.10), v3(0.175, 0.105, 0.17), 0.35) },
+		{ geo: ico(), m: mat4(v3(-0.22, 0.585, 0.09), v3(0.175, 0.105, 0.17), -0.35) },
+
+		{ geo: ico(), m: mat4(v3(0.10, 0.62, -0.15), v3(0.15, 0.10, 0.145), 0.5) },
+		{ geo: ico(), m: mat4(v3(-0.11, 0.63, -0.14), v3(0.14, 0.09, 0.135), -0.45) },
+
+		{ geo: ico(), m: mat4(v3(0.01, 0.735, 0.04), v3(0.19, 0.11, 0.175), 0.15) },
+	];
+	return mergeParts(parts);
+}
+
+function alleeStem() {
+	const parts = [{ geo: trunkGeo(0.052, 0.034, 6, 0.34), m: new THREE.Matrix4() }];
+
+	const LIMBS = [
+		[0.00, 0.520, 0.310, 0.09, 0.020],
+		[0.22, 0.575, 0.100, 0.08, 0.017],
+		[-0.22, 0.585, 0.090, 0.08, 0.017],
+		[0.10, 0.620, -0.150, 0.07, 0.014],
+		[-0.11, 0.630, -0.140, 0.07, 0.014],
+		[0.01, 0.735, 0.040, 0.06, 0.016],
+	];
+	const BURY = 0.85;
+	const foot = new THREE.Vector3(0, 0.30, 0);
+	for (const [x, y, z, lift, r] of LIMBS) {
+		const tip = foot.clone().lerp(new THREE.Vector3(x, y, z), BURY);
+
+		const mid = foot.clone().lerp(tip, 0.55);
+		mid.y += lift;
+		const curve = new THREE.CatmullRomCurve3([foot.clone(), mid, tip]);
+		parts.push({ geo: new THREE.TubeGeometry(curve, 5, r, 4, false),
+			m: new THREE.Matrix4() });
+	}
+	return mergeParts(parts);
+}
+
 function coniferCanopy() {
 	return mergeParts([
 		{ geo: new THREE.ConeGeometry(1, 1, 7), m: mat4(v3(0, 0.54, 0), v3(0.21, 0.50, 0.21)) },
@@ -167,6 +213,8 @@ const SHAPES = {
 	pyramidal: { geo: () => proportion(pyramidalCanopy()), trunkTop: 0.63, trunkR: [0.030, 0.017], side: THREE.FrontSide },
 	conifer: { geo: () => proportion(coniferCanopy()), trunkTop: 0.56, trunkR: [0.034, 0.014], side: THREE.FrontSide },
 
+	allee: { geo: alleeCanopy, stem: alleeStem, trunkTop: 0.34, trunkR: [0.052, 0.034], side: THREE.FrontSide },
+
 	palm: { geo: palmCrown, trunkTop: 0.97, trunkR: [0.014, 0.011], side: THREE.DoubleSide },
 };
 
@@ -174,6 +222,8 @@ const SHAPE_OF = {
 	maple: 'tiered', oak: 'spreading', poplar: 'columnar', ginkgo: 'pyramidal',
 	sweetgum: 'round', liveoak: 'round', jacaranda: 'weeping',
 	conifer: 'conifer', palm: 'palm',
+
+	allee: 'allee',
 };
 
 const LEAF = {
@@ -187,6 +237,8 @@ const LEAF = {
 
 	conifer: 0x3f6b46,
 	palm: 0x5d8a3c,
+
+	allee: 0x375c31,
 };
 const BARK = 0x6b5136;
 
@@ -244,7 +296,10 @@ export async function buildTrees(url, opts = {}) {
 			const shapeId = SHAPE_OF[kind] || 'round';
 			const S = SHAPES[shapeId];
 			geoOf[kind] = S.geo();
-			trunkOf[kind] = trunkGeo(S.trunkR[0], S.trunkR[1], 6, S.trunkTop);
+
+			trunkOf[kind] = S.stem
+				? S.stem()
+				: trunkGeo(S.trunkR[0], S.trunkR[1], 6, S.trunkTop);
 
 			matOf[kind] = new THREE.MeshStandardMaterial({
 				name: `leaf-${kind}`, color: LEAF[kind] || LEAF.oak,
@@ -273,6 +328,9 @@ export async function buildTrees(url, opts = {}) {
 	const pos = new THREE.Vector3();
 	const scl = new THREE.Vector3();
 	const up = new THREE.Vector3(0, 1, 0);
+
+	const side = new THREE.Vector3(1, 0, 0);
+	const qLean = new THREE.Quaternion();
 	const parts = [];
 	let triangles = 0;
 	const perKind = {};
@@ -295,7 +353,16 @@ export async function buildTrees(url, opts = {}) {
 				const h = r[4] * (H_JITTER_LO + hash01(seed * 9781) * H_JITTER_SPAN);
 				pos.set(r[0], r[1], r[2]);
 
-				q.setFromAxisAngle(up, hash01(seed * 40503) * Math.PI * 2);
+				const bearing = r[6];
+				if (bearing === undefined) {
+					q.setFromAxisAngle(up, hash01(seed * 40503) * Math.PI * 2);
+				} else {
+					q.setFromAxisAngle(up, bearing * Math.PI / 180);
+					const deg = LEAN_DEG *
+						(1 + (hash01(seed * 31337) - 0.5) * 2 * LEAN_JITTER);
+					qLean.setFromAxisAngle(side, deg * Math.PI / 180);
+					q.multiply(qLean);
+				}
 				scl.set(h, h, h);
 				m.compose(pos, q, scl);
 				crown.setMatrixAt(k, m);

@@ -39,8 +39,8 @@ const frac = (x) => x - Math.floor(x);
 
 export const WINDOW_SIZES = {
 	upstream: {
-		label: 'standard (2-3 storey)',
-		blurb: 'Their numbers exactly: 1.35 x 1.5 m panes at a 3.2 m pitch on a 3.2 m storey.',
+		label: 'standard (2-3 story)',
+		blurb: 'Their numbers exactly: 1.35 x 1.5 m panes at a 3.2 m pitch on a 3.2 m story.',
 		scale: 1.0,
 	},
 	large: {
@@ -176,7 +176,11 @@ function wallQuads(geo) {
 		if (!p1) continue;
 		const k0 = `${Math.round(p0[0] / PLAN_M)},${Math.round(p0[1] / PLAN_M)}`;
 		const k1 = `${Math.round(p1[0] / PLAN_M)},${Math.round(p1[1] / PLAN_M)}`;
-		const key = k0 < k1 ? `${k0}|${k1}` : `${k1}|${k0}`;
+
+		const lo = k0 < k1 ? p0 : p1;
+		const hi = k0 < k1 ? p1 : p0;
+		const side = (hi[0] - lo[0]) * fz - (hi[1] - lo[1]) * fx >= 0 ? 'A' : 'B';
+		const key = k0 < k1 ? `${k0}|${k1}|${side}` : `${k1}|${k0}|${side}`;
 		let q = byEdge.get(key);
 		if (!q) {
 
@@ -203,6 +207,15 @@ function wallQuads(geo) {
 		q.len = Math.hypot(q.bx - q.ax, q.bz - q.az);
 		if (q.len > PLAN_M) out.push(q);
 	}
+
+	const bothSides = new Map();
+	for (const k of byEdge.keys()) {
+		const plan = k.slice(0, k.lastIndexOf('|'));
+		bothSides.set(plan, (bothSides.get(plan) || 0) + 1);
+	}
+	let party = 0;
+	for (const n of bothSides.values()) if (n > 1) party++;
+	out.party = party;
 	return out;
 }
 
@@ -216,12 +229,16 @@ export function buildWindows(root, opts = {}) {
 	const lit = !!opts.lit;
 
 	const quads = [];
+
+	let party = 0;
 	root.traverse((o) => {
 		if (!o.isMesh || !o.geometry) return;
 		if (o.geometry.userData && o.geometry.userData.windows) return;
 
 		if (o.geometry.userData && o.geometry.userData.neon) return;
-		for (const q of wallQuads(o.geometry)) quads.push(q);
+		const w = wallQuads(o.geometry);
+		party += w.party || 0;
+		for (const q of w) quads.push(q);
 	});
 
 	quads.sort((a, b) => b.len - a.len);
@@ -376,6 +393,8 @@ export function buildWindows(root, opts = {}) {
 		walls,
 		buried,
 		flipped,
+
+		party,
 		quads: quads.length,
 
 		dropped: bound,
