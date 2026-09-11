@@ -40,19 +40,14 @@ const frac = (x) => x - Math.floor(x);
 export const WINDOW_SIZES = {
 	upstream: {
 		label: 'standard (2-3 story)',
-		blurb: 'Their numbers exactly: 1.35 x 1.5 m panes at a 3.2 m pitch on a 3.2 m story.',
 		scale: 1.0,
 	},
 	large: {
 		label: 'large panes',
-		blurb: 'Half again as big and pitched to match. Fewer, bigger holes — reads at more '
-			+ 'distance and aliases less, at the cost of looking less like a house.',
 		scale: 1.5,
 	},
 	tower: {
 		label: 'tower (Manhattan)',
-		blurb: 'Double. ⚠️ Upstream sized their windows for a 7 m median building and warned '
-			+ 'in writing that towers need their own; on nycwhole the small pane is a slit.',
 		scale: 2.0,
 	},
 };

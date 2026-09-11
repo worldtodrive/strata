@@ -1,4 +1,4 @@
-// Steps for the live suite: everything that requires asking the public internet.
+
 
 import { Given, When, Then, After, setDefaultTimeout } from '@cucumber/cucumber';
 import assert from 'node:assert/strict';
@@ -7,7 +7,6 @@ import { ORIGIN, read, declaredHeaders, parseCsp, urlsIn } from './shared.mjs';
 
 setDefaultTimeout(120000);
 
-// Third-party hosts are under no obligation to answer a build server quickly.
 async function fetchWithRetry(url, options = {}, attempts = 3) {
 	let last;
 	for (let i = 0; i < attempts; i++) {
@@ -20,8 +19,6 @@ async function fetchWithRetry(url, options = {}, attempts = 3) {
 	}
 	throw last;
 }
-
-// ------------------------------------------------------------ the site
 
 When('I request {string}', async function (path) {
 	this.response = await fetchWithRetry(ORIGIN + path);
@@ -52,8 +49,6 @@ Then('the delivered policy limits {string} to this origin', function (directive)
 	assert.deepEqual(policy[directive], ["'self'"]);
 });
 
-// The host rewrites and re-serves what the artefact declares, so this is where
-// a silent transformation would show up.
 Then('the delivered policy is identical to the one declared in the artefact', function () {
 	const normalise = (s) => s.replace(/\s+/g, ' ').trim();
 	assert.equal(
@@ -62,8 +57,6 @@ Then('the delivered policy is identical to the one declared in the artefact', fu
 		'the policy in production is not the policy in the artefact',
 	);
 });
-
-// -------------------------------------------------------------- identity
 
 function meta(html, attr, name) {
 	const re = new RegExp(`<meta[^>]*${attr}=["']${name}["'][^>]*content=["']([^"']*)["']`, 'i');
@@ -105,8 +98,6 @@ Then('that sitemap is served', async function () {
 	assert.equal(response.status, 200, `${this.sitemap} answered ${response.status}`);
 });
 
-// ----------------------------------------------------------- the browser
-
 Given('a headless browser', async function () {
 	const { chromium } = await import('playwright');
 	this.browser = await chromium.launch();
@@ -125,8 +116,6 @@ Given('a headless browser', async function () {
 	});
 });
 
-// blob: and data: URLs are the page talking to itself out of memory; they never
-// touch the network, so only real network schemes are of interest here.
 function foreign(urls, origin) {
 	return [...new Set(urls.filter((u) => /^https?:/.test(u)).filter((u) => !u.startsWith(origin)))];
 }
@@ -139,8 +128,6 @@ When('it opens the home page', async function () {
 	await this.page.goto(ORIGIN + '/', { waitUntil: 'domcontentloaded' });
 });
 
-// The loading screen removes itself from the document once the level is up. It
-// stays put, showing a message, if loading fails — so its absence is the signal.
 async function waitForWorld(page, seconds) {
 	await page.waitForFunction(() => !document.getElementById('boot'), null, { timeout: seconds * 1000 });
 }
@@ -175,10 +162,6 @@ Then('no response came from an origin other than {string}', function (origin) {
 	assert.deepEqual(leaked, [], 'the page successfully loaded something from another origin');
 });
 
-// The host injects its own analytics beacon into every response. It is not in
-// the artefact and cannot be removed from here, so what is checked is that the
-// policy stops it: every foreign request must have failed, and failed for that
-// reason rather than because the far end happened to be down.
 Then('every request to another origin was blocked by the policy', function () {
 	const attempted = foreign(this.requested, ORIGIN);
 	const notBlocked = attempted.filter((u) => this.blocked.get(u) !== 'csp');
@@ -195,18 +178,11 @@ Then('every request to another origin was blocked by the policy', function () {
 	assert.deepEqual(notBlocked, [], 'a request to another origin was not blocked by the policy');
 });
 
-// ----------------------------------------------------------- attribution
-
 Given('the attribution URLs in {string}', function (file) {
 	this.urls = urlsIn(read(file)).filter((u) => !u.startsWith(ORIGIN));
 	assert.ok(this.urls.length > 0, `${file} names no attribution URLs`);
 });
 
-// A dead link is a 404, a 410, or a host that no longer exists. A 403 or a 429
-// is a host declining to talk to a build server, which says nothing about
-// whether the resource is still published — so it is reported, not failed.
-// Overstating this check would make it useless: it would be red most weeks and
-// nobody would look.
 async function resolves(url) {
 	try {
 		const response = await fetchWithRetry(url, { headers: { 'user-agent': 'strata-link-check' } });

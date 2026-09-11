@@ -3610,7 +3610,7 @@ function setHTML(el, html, name) {
 					+ `(budget ${DOM_WRITE_WARN}). An innerHTML write is a parse, a style `
 					+ `recalc and a layout -- this will stutter the world. Throttle it, or `
 					+ `round the value it prints so the unchanged-text guard can work.`);
-				status(`⚠ ${k} is rewriting ${n}x/s — see the console`);
+				status(`${k} is rewriting ${n}x/s — see the console`);
 			}
 		}
 		domWrites.clear();

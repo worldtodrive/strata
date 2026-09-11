@@ -1,10 +1,5 @@
 Feature: The site names itself consistently
 
-  The site is indexable and is meant to be found. A canonical link or an og:url
-  that names the wrong origin splits the site in two as far as a search engine
-  is concerned, and the symptom is invisible from a browser: the page looks
-  perfect while ranking for nothing.
-
   Scenario: The canonical link and og:url agree on the production origin
     When I request "/"
     Then the canonical link is "https://drivestrata.io/"

@@ -436,7 +436,7 @@ const CAM_TUNE_BY_NAME = (() => {
 			console.warn(`[camtune] ignored "${raw}" — expected <preset>.<field>=<number>, `
 				+ 'where <field> is one of fwd, up, side, pitch, fov, liftPow, back, '
 				+ 'frameBelow, tiltNear, tiltFar, zoomNear, zoomFar, lag, lagY, lookLag, '
-				+ 'lookLagY. ⚠️ A second parameter needs & and not ? — '
+				+ 'lookLagY. A second parameter needs & and not ? — '
 				+ '?chunk=whole&camtune=chasedyn3.lagY=40');
 			continue;
 		}

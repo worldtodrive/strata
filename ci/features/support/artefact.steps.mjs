@@ -1,5 +1,4 @@
-// Steps for the artefact suite: everything that can be decided by reading the
-// files that are about to ship.
+
 
 import { Given, When, Then } from '@cucumber/cucumber';
 import assert from 'node:assert/strict';
@@ -14,8 +13,6 @@ import {
 	declaredHeaders, parseCsp, urlsIn, bytes,
 } from './shared.mjs';
 
-// Downloads land beside the tooling that fetches them, not at the repository
-// root, which stays free of anything the checks generate.
 const CACHE = path.join(CI, '.cache', 'upstream');
 
 Given('the shipped artefact', function () {
@@ -27,8 +24,6 @@ Given('the shipped artefact', function () {
 Given('the vendor manifest', function () {
 	this.manifest = JSON.parse(read('vendor-manifest.json'));
 });
-
-// ---------------------------------------------------------------- payload
 
 Then('no file is larger than {int} MiB', function (limitMiB) {
 	const limit = limitMiB * 1024 * 1024;
@@ -57,8 +52,6 @@ Then('the ten largest files are listed for the record', function () {
 		`\n\n${headroom.toFixed(1)}% of the per-file limit is still unused.`,
 	);
 });
-
-// -------------------------------------------------------------- isolation
 
 Then('the header file declares a Content-Security-Policy', function () {
 	this.csp = declaredHeaders().get('content-security-policy');
@@ -105,10 +98,6 @@ Then('no first-party script constructs an XMLHttpRequest', function () {
 	assert.deepEqual(offenders, [], 'first-party scripts must not construct XMLHttpRequests');
 });
 
-// The rule is self-maintaining on purpose: rather than checking the page's
-// outbound links against a list somebody keeps up to date by hand, it checks
-// them against NOTICE. A new external link therefore has to be credited before
-// it is allowed, which is the obligation anyway.
 Then('every external URL in the home page is an attribution link', function () {
 	const credited = new Set(urlsIn(read('NOTICE')));
 	const stray = urlsIn(read('docs/index.html'))
@@ -117,8 +106,6 @@ Then('every external URL in the home page is an attribution link', function () {
 
 	assert.deepEqual(stray, [], 'external links on the page must be credited in NOTICE');
 });
-
-// ------------------------------------------------------------- provenance
 
 Then('every vendored file matches its recorded fingerprint', function () {
 	const wrong = [];
@@ -130,8 +117,6 @@ Then('every vendored file matches its recorded fingerprint', function () {
 	assert.deepEqual(wrong, [], 'vendored files no longer match their recorded fingerprints');
 });
 
-// npm pack is used rather than a bare download so that the registry's own
-// integrity checking applies to the tarball before anything is extracted.
 When('the pinned packages are downloaded from the npm registry', function () {
 	this.upstream = new Map();
 
@@ -167,7 +152,6 @@ Then('every vendored file is byte-identical to its upstream original', function 
 	assert.deepEqual(differ, [], 'vendored files must be byte-identical to upstream');
 });
 
-// Licence texts and notices are checked by licences.feature; this is about code.
 Then('every file in the vendor directory is listed in the manifest', function () {
 	const listed = new Set(this.manifest.files.map((f) => f.path));
 	const shipped = walk(path.join(SITE, 'vendor')).filter((f) => /\.(js|mjs|cjs|wasm)$/.test(f));
@@ -185,8 +169,6 @@ Then('NOTICE names the version of every vendored library', function () {
 		const name = spec.slice(0, at);
 		const version = spec.slice(at + 1);
 
-		// three.js is published to npm as 0.160.0 but names itself r160
-		// everywhere else, including in its own copyright header.
 		const accepted = [version];
 		if (name === 'three') accepted.push(`r${parseInt(version.split('.')[1], 10)}`);
 
@@ -198,23 +180,16 @@ Then('NOTICE names the version of every vendored library', function () {
 	assert.deepEqual(missing, [], 'NOTICE must agree with what actually ships');
 });
 
-// --------------------------------------------------------------- licences
-
 Then('{string} exists and is not empty', function (file) {
 	assert.ok(exists(file), `${file} is missing`);
 	assert.ok(fs.statSync(abs(file)).size > 0, `${file} is empty`);
 });
 
-// Licence texts are hard-wrapped, so a phrase that sits on one line today can
-// straddle a line break after any reflow. Collapsing whitespace on both sides
-// keeps this check about the wording rather than about the margins.
 Then('{string} contains {string}', function (file, text) {
 	assert.ok(exists(file), `${file} is missing`);
 	const flat = (s) => s.replace(/\s+/g, ' ');
 	assert.ok(flat(read(file)).includes(flat(text)), `${file} does not contain ${JSON.stringify(text)}`);
 });
-
-// -------------------------------------------------------- vulnerabilities
 
 When('the OSV database is asked about every pinned library', async function () {
 	const queries = Object.keys(this.manifest.packages).map((spec) => {
@@ -247,8 +222,7 @@ Then('the declared dependencies have no known vulnerabilities at high severity o
 	try {
 		report = execFileSync('npm', ['audit', '--json'], { cwd: CI, encoding: 'utf8', stdio: 'pipe' });
 	} catch (err) {
-		// npm audit exits non-zero when it finds anything at all, including the
-		// low-severity findings this step deliberately tolerates.
+
 		report = err.stdout;
 	}
 

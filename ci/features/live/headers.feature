@@ -1,12 +1,5 @@
 Feature: The security headers survive to production
 
-  isolation.feature checks that the right headers are declared in the artefact.
-  This checks the host is actually sending them. Those are different claims, and
-  the gap between them is a real failure mode: header configuration is
-  interpreted by the host, not by this repository, so a syntax change or a
-  configuration reset can silently drop the lot while the site keeps serving
-  pages perfectly.
-
   Scenario Outline: The home page carries <header>
     When I request "/"
     Then the response carries the header "<header>"

@@ -1,5 +1,4 @@
-// Helpers shared by both suites. Nothing here asserts anything; the assertions
-// live in the step definitions, next to the sentence they implement.
+
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -7,11 +6,6 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-// The test tooling lives in ci/ rather than at the repository root, and that
-// placement is load-bearing: the host's build system treats a package.json at
-// the root as "this is a Node project to install before deploying", which put
-// the test runner's dependencies between a commit and the deployed site. There
-// is nothing to detect now, so deploying is unaffected by anything in here.
 export const CI = path.resolve(here, '..', '..');
 export const ROOT = path.resolve(CI, '..');
 export const SITE = path.join(ROOT, 'docs');
@@ -31,7 +25,6 @@ export function exists(rel) {
 	return fs.existsSync(abs(rel));
 }
 
-// Every file under dir, as paths relative to ROOT.
 export function walk(dir) {
 	const out = [];
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -42,15 +35,10 @@ export function walk(dir) {
 	return out;
 }
 
-// The scripts we wrote, as opposed to the ones we vendored. The distinction
-// matters: our code is held to "names no external origin at all", while the
-// vendored code is held to "is byte-identical to what upstream published".
 export function firstPartyScripts() {
 	return walk(SITE).filter((f) => f.endsWith('.js') && !f.startsWith('docs/vendor/'));
 }
 
-// _headers is a flat file of path patterns, each followed by indented headers.
-// This returns the headers declared for the pattern given, keyed lower case.
 export function declaredHeaders(pattern = '/*') {
 	const headers = new Map();
 	let section = null;
@@ -68,8 +56,6 @@ export function declaredHeaders(pattern = '/*') {
 	return headers;
 }
 
-// "default-src 'self'; connect-src 'self' blob:" becomes
-// { 'default-src': ["'self'"], 'connect-src': ["'self'", 'blob:'] }
 export function parseCsp(policy) {
 	const out = {};
 	for (const clause of policy.split(';')) {
@@ -80,8 +66,6 @@ export function parseCsp(policy) {
 	return out;
 }
 
-// Absolute http(s) URLs appearing in a piece of text, de-duplicated. Trailing
-// punctuation is trimmed because these are pulled out of prose as well as markup.
 export function urlsIn(text) {
 	const found = text.match(/https?:\/\/[^\s"'<>)\]]+/g) || [];
 	return [...new Set(found.map((u) => u.replace(/[.,]+$/, '')))];

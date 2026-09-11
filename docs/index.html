@@ -79,7 +79,6 @@
 	#hud .dim { color: #7d8698; }
 	#hud .big { color: #fff; font-size: 15px; }
 
-
 	#camlabel {
 		position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
 		font: 700 13px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
@@ -443,10 +442,7 @@
 	#menu-body table.keys {
 		width: 100%; border-collapse: collapse; font-size: 13px;
 	}
-	/* ⚠️ NO BORDER ON THE HEADER ROW. It was a 1 px rule under the first cell
-	   only, which stopped dead at 42% of the width and read as a rendering fault
-	   rather than a divider. The row borders below already give the table its
-	   structure. */
+
 	#menu-body table.keys th {
 		text-align: left; padding: 14px 0 6px; color: #7f8ca6;
 		font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
@@ -486,8 +482,7 @@
 		right: calc(22px + env(safe-area-inset-right));
 		bottom: calc(22px + env(safe-area-inset-bottom));
 	}
-	/* The card is centred by flex, so it needs the insets as padding on the
-	   overlay rather than as an offset. */
+
 	#menu-overlay {
 		padding: env(safe-area-inset-top) env(safe-area-inset-right)
 			env(safe-area-inset-bottom) env(safe-area-inset-left);

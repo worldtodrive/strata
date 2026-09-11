@@ -512,7 +512,7 @@ export function buildNpcTraffic(scene, graph, opts = {}) {
 		+ `(${(s.spawnMetres / 1000).toFixed(1)} km of ${(s.totalMetres / 1000).toFixed(1)} km) — `
 		+ `one every ${perCar >= 1000 ? `${(perCar / 1000).toFixed(2)} km` : `${Math.round(perCar)} m`} of lane · `
 		+ `${s.edges.toLocaleString()} lane edges, ${s.deadEnds} dead ends`
-		+ (s.reversed ? ` · ⚠️ ${s.reversed} lanes reversed for travel_dir` : '')
+		+ (s.reversed ? ` · ${s.reversed} lanes reversed for travel_dir` : '')
 		+ `, ${TRAFFIC.headwayM} m headway, ${TRAFFIC.spawnRadius} m radius, 5 draw calls`;
 
 	return {
