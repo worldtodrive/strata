@@ -218,7 +218,7 @@ export const HANDLING = {
 
 	arcade: {
 		label: 'arcade',
-		note: 'quick and planted. NOTHING touches your steering — the rear tyres do all of it.',
+		note: 'quick and planted. NOTHING touches your steering — the rear tires do all of it.',
 		maxSteer: 0.50, rise: 2.6, fall: 6.0, falloff: 30.0, slew: 12.0,
 
 		align: 0.0, hold: 0.0, holdDamp: 0.0,

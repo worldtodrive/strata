@@ -104,9 +104,9 @@ function applyPavements() {
 	});
 }
 
-const WELD_LAYERS = ['ground', 'surfaces'];
+const WELD_LAYERS = ['ground', 'surfaces', 'painted'];
 
-const UNQUANTISE_LAYERS = ['ground', 'surfaces', 'buildings'];
+const UNQUANTISE_LAYERS = ['ground', 'surfaces', 'buildings', 'painted'];
 let weldNormals = true;
 
 let variedBuildings = true;
@@ -288,10 +288,42 @@ function tonedColour(key) {
 
 function applyWorldTones() {
 	const P = WORLD_TONES[worldTones] || WORLD_TONES.bench;
+
+	if (coverMod && coverMod.haveCover()) {
+		const raw = coverMod.rawPalette();
+		if (raw && raw.length) {
+			const unify = P.ground !== undefined ? (P.unify || 0) : 0;
+			const flat = unify
+				? tonedFrom(mixTone(P.surfaces, P.ground, unify), 'surfaces')
+				: tonedColour('surfaces');
+			const rows = new Array(256);
+			for (let i = 1; i < raw.length; i++) {
+				const r = raw[i];
+				if (!r || !r[3]) continue;
+				let hexIn = (r[0] << 16) | (r[1] << 8) | r[2];
+				let out;
+				if (!categoryTones) {
+					out = flat;
+				} else {
+					if (unify) hexIn = mixTone(hexIn, P.ground, unify);
+					out = tonedFrom(hexIn, 'surfaces');
+				}
+				rows[i] = [(out >> 16) & 255, (out >> 8) & 255, out & 255];
+			}
+			coverMod.setPalette(rows);
+		}
+	}
 	if (chunk && chunk.layers) {
 		for (const spec of LAYERS) {
 			const L = chunk.layers[spec.key];
-			if (!L || !L.root || P[spec.key] === undefined) continue;
+			if (!L || !L.root) continue;
+
+			const painted = spec.key === 'painted';
+			if (painted) {
+				if (P.ground === undefined) continue;
+			} else if (P[spec.key] === undefined) {
+				continue;
+			}
 
 			if (spec.key === 'buildings' && variedBuildings) {
 				const G = worldGrade();
@@ -303,15 +335,21 @@ function applyWorldTones() {
 				continue;
 			}
 
-			const hex = tonedColour(spec.key);
+			const coverKey = painted ? 'surfaces' : spec.key;
+			const hex = tonedColour(painted ? 'ground' : spec.key);
 
-			const unify = spec.key === 'surfaces' && P.ground !== undefined
+			const unify = (spec.key === 'surfaces' || painted) && P.ground !== undefined
 				? (P.unify || 0) : 0;
 
 			const coverHex = unify
-				? tonedFrom(mixTone(P[spec.key], P.ground, unify), spec.key) : hex;
+				? tonedFrom(mixTone(P[coverKey], P.ground, unify), coverKey) : hex;
 			L.root.traverse((o) => {
 				if (!o.isMesh || !o.material || !o.material.color) return;
+
+				if (painted && o.material.userData.role === 'terrain') {
+					o.material.color.setHex(tonedColour('ground'));
+					return;
+				}
 				let albedo = categoryTones
 					? o.material.userData.albedo : undefined;
 				if (albedo !== undefined && unify) {
@@ -324,7 +362,7 @@ function applyWorldTones() {
 					return;
 				}
 				o.material.color.setHex(albedo === undefined
-					? coverHex : tonedFrom(albedo, spec.key));
+					? coverHex : tonedFrom(albedo, coverKey));
 			});
 		}
 	}
@@ -349,7 +387,7 @@ function applyWorldTones() {
 const SHEEN = {
 	day: null,
 
-	sunset: { ground: 0.62, surfaces: 0.68 },
+	sunset: { ground: 0.62, surfaces: 0.68, painted: 0.64 },
 
 	night: null,
 };
@@ -495,12 +533,18 @@ function applyTreeTint(spec) {
 	});
 }
 
+const NO_CAST_LAYERS = ['surfaces'];
+
+function dressOptions(key) {
+	return NO_CAST_LAYERS.includes(key) ? { cast: false, receive: true } : undefined;
+}
+
 function dressScene() {
 	if (!lighting) return;
 	if (chunk && chunk.layers) {
 		for (const spec of LAYERS) {
 			const L = chunk.layers[spec.key];
-			if (L && L.root) lighting.dress(L.root);
+			if (L && L.root) lighting.dress(L.root, dressOptions(spec.key));
 		}
 	}
 	for (const name in variantMesh) {
@@ -583,7 +627,7 @@ const LAYERS = [
 		note: 'massing blocks, drawn only' },
 
 	{ key: 'garages', drive: true, tone: 0xb3b0a8,
-		note: 'multi-storey car parks — drawn AND driven on' },
+		note: 'multi-story car parks — drawn AND driven on' },
 
 	{ key: 'piers', drive: false, tone: 0xac736e,
 		note: 'support columns under the flyovers, drawn only' },
@@ -591,11 +635,24 @@ const LAYERS = [
 	{ key: 'landmarks', drive: false, tone: 0xd6dbe1,
 		note: 'hero structures the map names but a box cannot draw — the London Eye. '
 			+ 'Scenery, never collided' },
+
+	{ key: 'painted', drive: true, tone: 0x6f7a63, bias: 'terrain',
+		note: 'the terrain with the ground cover cut INTO it — one mesh, '
+			+ 'replaces ground + surfaces' },
 ];
 
 const shown = LAYERS.map(() => true);
 
 const VARIANT_REPLACES = ['road', 'slab', 'junctions'];
+
+const PAINTED_REPLACES = ['ground', 'surfaces'];
+
+function paintedActive() {
+	if (!chunk || !chunk.meta || !chunk.meta.layers
+		|| !chunk.meta.layers.painted) return false;
+	const i = LAYERS.findIndex((spec) => spec.key === 'painted');
+	return i >= 0 && shown[i];
+}
 const ROAD_TONE = 0x8d939c;
 
 function roadTone() {
@@ -611,7 +668,7 @@ const ROAD_TINTS = {
 	graphite: { label: 'graphite', hex: 0x4a4f57 },
 	weathered: { label: 'weathered', hex: 0x585349 },
 	concrete: { label: 'concrete', hex: 0x6f7168 },
-	bench: { label: 'bench grey', hex: 0x8d939c },
+	bench: { label: 'bench gray', hex: 0x8d939c },
 };
 let roadTint = 'palette';
 
@@ -835,7 +892,7 @@ function buildAsphalt(spec = ROAD_SURFACES.asphalt) {
 }
 
 let rainbowOn = false;
-let inspectOn = false;
+
 
 let flatOn = false;
 
@@ -848,7 +905,7 @@ let treeCull = true;
 
 let treeError = '';
 let picked = null;
-let pickOverlay = null;
+
 let variantRoads = {};
 
 const roadColourCache = new Map();
@@ -884,84 +941,41 @@ function paintByRoad(root, ids) {
 	});
 }
 
-function showPicked(root, ids, id) {
-	if (pickOverlay) {
-		scene.remove(pickOverlay);
-		pickOverlay.geometry.dispose();
-		pickOverlay = null;
-	}
-	if (id === null) return;
-	const out = [];
-	root.traverse((o) => {
-		if (!o.isMesh) return;
-		const pos = o.geometry.attributes.position;
-		const idx = o.geometry.index;
-		const faces = idx ? idx.count / 3 : pos.count / 3;
-		for (let f = 0; f < faces; f++) {
-			if (ids[f] !== id) continue;
-			for (let k = 0; k < 3; k++) {
-				const vi = idx ? idx.getX(f * 3 + k) : f * 3 + k;
-				out.push(pos.getX(vi), pos.getY(vi), pos.getZ(vi));
-			}
-		}
-	});
-	const geo = new THREE.BufferGeometry();
-	geo.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
-	pickOverlay = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-		color: 0x35e0ff, transparent: true, opacity: 0.55,
-		side: THREE.DoubleSide, depthTest: false,
-	}));
-	pickOverlay.renderOrder = 998;
-	scene.add(pickOverlay);
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
-const PICK_SLOP_PX = 6;
-let downAt = null;
-
-renderer.domElement.addEventListener('pointerdown', (e) => {
-	downAt = [e.clientX, e.clientY];
-});
-renderer.domElement.addEventListener('pointerup', (e) => {
-	if ((!inspectOn && !editOn) || !downAt) return;
-	const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]);
-	downAt = null;
-	if (moved > PICK_SLOP_PX) return;
-	const v = activeVariant();
-	const M = v && variantMesh[v.name];
-	if (!M || !M.ids) {
-		status('inspector: pick a variant first — the tile GLBs carry no road ids');
-		return;
-	}
-	pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-	pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
-	raycaster.setFromCamera(pointer, camera);
-	const hit = raycaster.intersectObject(M.root, true)[0];
-	if (!hit || hit.faceIndex === undefined) {
-		status('inspector: nothing under the cursor');
-		return;
-	}
-	const id = M.ids[hit.faceIndex];
-	const info = variantRoads[String(id)] || {};
-	picked = { id, info, point: hit.point.clone(),
-		slope: hit.face ? Math.abs(hit.face.normal.y) : 1 };
-	showPicked(M.root, M.ids, id);
-
-	const bits = [`${id < 0 ? 'junction' : 'road'} ${Math.abs(id)}`];
-	if (info.name) bits.push(info.name);
-	if (info.class) bits.push(info.class);
-	if (info.lanes) bits.push(`${info.lanes} lane${info.lanes === 1 ? '' : 's'}`);
-	if (info.width_m) bits.push(`${info.width_m} m wide`);
-	if (info.length_m) bits.push(`${info.length_m} m long`);
-	if (info.arms) bits.push(`${info.arms} arms`);
-	if (info.junction && id > 0) bits.push(`inside junction ${info.junction}`);
-	bits.push(`at ${hit.point.x.toFixed(1)}, ${hit.point.z.toFixed(1)} · `
-		+ `height ${hit.point.y.toFixed(2)} m`);
-	status(`◆ ${bits.join(' · ')}`);
-	;
-	if (editOn) selectForEdit(id);
-});
 
 let EDGES_DOC = null;
 let EDGES = null;
@@ -1029,29 +1043,7 @@ function partnersOf(key) {
 		&& solo(EDGES[k]) && wayOf(EDGES[k]) === way);
 }
 
-function selectForEdit(id) {
-	if (!EDGES) {
-		status(`point editor: ${EDGES_DOC ? `no boundaries for ${variantName()}` : 'no edges.json'}`
-			+ ' — rerun the level tools');
-		return;
-	}
-	if (id < 0) { status('point editor: that is a junction — pick a road'); return; }
-	const key = EDGE_OF_ROAD[String(id)];
-	if (!key) {
-		status(`point editor: road ${id} draws no ribbon in ${variantName()}`);
-		return;
-	}
-	editRoad = key;
-	buildHandles();
-	const members = EDGES[key].members || [];
-	const n = roadOf(editRoad).spine.length;
-	status(`point editor: ${members.length > 1
-		? `ribbon ${key} — ${members.length} roads fused into one`
-		: `road ${key}`}, ${n} stations`
-		+ (partnersOf(editRoad).length ? ', + the other half of the street in orange' : '')
-		+ (handleStride > 1 ? `, every ${handleStride}th shown` : '')
-		+ ' — drag a dot, double-click an edge to ADD one, [ ] for density');
-}
+
 
 function disposeEdit() {
 	for (const o of [handlePts, outlineL, outlineR, previewMesh, hoverPt]) {
@@ -1404,6 +1396,61 @@ function unquantiseGeometry(o) {
 	return true;
 }
 
+function weldNormalsAcross(root, key) {
+	const GRID = 1e4;
+	const meshes = [];
+	root.traverse((o) => { if (o.isMesh && o.geometry) meshes.push(o); });
+	if (meshes.length < 2) return;
+	const acc = new Map();
+	const at = (x, y, z) => `${Math.round(x * GRID)},${Math.round(y * GRID)},`
+		+ `${Math.round(z * GRID)}`;
+
+	for (const o of meshes) {
+		const pos = o.geometry.getAttribute('position');
+		const idx = o.geometry.index;
+		const n = idx ? idx.count : pos.count;
+		for (let i = 0; i + 2 < n; i += 3) {
+			const a = idx ? idx.getX(i) : i;
+			const b = idx ? idx.getX(i + 1) : i + 1;
+			const c = idx ? idx.getX(i + 2) : i + 2;
+			const ax = pos.getX(a), ay = pos.getY(a), az = pos.getZ(a);
+			const bx = pos.getX(b), by = pos.getY(b), bz = pos.getZ(b);
+			const cx = pos.getX(c), cy = pos.getY(c), cz = pos.getZ(c);
+			const ux = bx - ax, uy = by - ay, uz = bz - az;
+			const vx = cx - ax, vy = cy - ay, vz = cz - az;
+			let nx = uy * vz - uz * vy;
+			let ny = uz * vx - ux * vz;
+			let nz = ux * vy - uy * vx;
+
+			if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
+			const keys = [at(ax, ay, az), at(bx, by, bz), at(cx, cy, cz)];
+			for (const k of keys) {
+				const e = acc.get(k);
+				if (e) { e[0] += nx; e[1] += ny; e[2] += nz; }
+				else acc.set(k, [nx, ny, nz]);
+			}
+		}
+	}
+
+	let written = 0, missed = 0;
+	for (const o of meshes) {
+		const pos = o.geometry.getAttribute('position');
+		const nrm = o.geometry.getAttribute('normal');
+		if (!nrm) continue;
+		for (let i = 0; i < pos.count; i++) {
+			const e = acc.get(at(pos.getX(i), pos.getY(i), pos.getZ(i)));
+			if (!e) { missed++; continue; }
+			const len = Math.hypot(e[0], e[1], e[2]) || 1;
+			nrm.setXYZ(i, e[0] / len, e[1] / len, e[2] / len);
+			written++;
+		}
+		nrm.needsUpdate = true;
+	}
+	const share = (written + missed)
+		? (100 * written / (written + missed)).toFixed(1) : '0';
+	;
+}
+
 function weldLayer(root, key) {
 	let flatCount = 0;
 	let weldCount = 0;
@@ -1435,7 +1482,7 @@ function declaredHex(rgb) {
 	return (q(rgb[0]) << 16) | (q(rgb[1]) << 8) | q(rgb[2]);
 }
 
-const GRID_LAYERS = ['ground', 'surfaces'];
+const GRID_LAYERS = ['ground', 'surfaces', 'painted'];
 let gridMod = null;
 let gridPalette = 'cyan';
 let gridOn = false;
@@ -1446,6 +1493,46 @@ async function ensureGridMod() {
 		gridMod = await import(`./groundgrid.js${MODULE_STAMP}`);
 	}
 	return gridMod;
+}
+
+let coverMod = null;
+let coverOn = false;
+let coverAttached = 0;
+let coverLoading = null;
+
+const COVER_FLAT = {
+
+	lift: 0.0,
+	factor: 0,
+	units: -16,
+	depthWrite: true,
+	renderOrder: 0,
+};
+
+function applyCoverFlat() {
+	const L = chunk && chunk.layers && chunk.layers.surfaces;
+	if (!L || !L.root) return 0;
+	L.root.position.y = COVER_FLAT.lift;
+	let n = 0;
+	L.root.traverse((o) => {
+		if (!o.isMesh || !o.material) return;
+		o.renderOrder = COVER_FLAT.renderOrder;
+		for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
+			m.polygonOffset = COVER_FLAT.factor !== 0 || COVER_FLAT.units !== 0;
+			m.polygonOffsetFactor = COVER_FLAT.factor;
+			m.polygonOffsetUnits = COVER_FLAT.units;
+			m.depthWrite = COVER_FLAT.depthWrite;
+			n++;
+		}
+	});
+	return n;
+}
+
+async function ensureCoverMod() {
+	if (!coverMod) {
+		coverMod = await import(`./covercoat.js${MODULE_STAMP}`);
+	}
+	return coverMod;
 }
 
 async function applyGrid() {
@@ -1488,6 +1575,17 @@ async function ensureLayer(spec) {
 	});
 	if (declared) ;
 
+	if (spec.key === 'ground' && chunk.meta.cover) {
+
+		try {
+			const C = await ensureCoverMod();
+			coverAttached += C.attachToRoot(root);
+			C.writeCover(0);
+			;
+		} catch (err) {
+			console.warn('[cover] not attached:', err && err.message ? err.message : err);
+		}
+	}
 	if (GRID_LAYERS.includes(spec.key)) {
 		try {
 			const M = await ensureGridMod();
@@ -1508,6 +1606,8 @@ async function ensureLayer(spec) {
 
 	if (WELD_LAYERS.includes(spec.key)) weldLayer(root, spec.key);
 
+	if (spec.key === 'painted') weldNormalsAcross(root, spec.key);
+
 	rank(root, spec.bias);
 	root.visible = false;
 
@@ -1523,11 +1623,19 @@ async function ensureLayer(spec) {
 		collider.collider.setEnabled(false);
 		collider.collider.setFriction(GROUND_FRICTION);
 	}
+
+	if (waterMod && waterRings
+		&& (spec.key === 'ground' || spec.key === 'painted')) {
+
+		const cut = waterMod.clipGroundToWater(root, waterRings,
+			{ level: waterMod.waterLevel(chunk.meta).y });
+		if (cut.dropped) ;
+	}
 	chunk.layers[spec.key] = { root, collider, triangles: info.triangles, spec };
 
-	if (spec.key === 'surfaces') applyPavements();
+	if (spec.key === 'surfaces') { applyPavements(); applyCoverFlat(); }
 
-	if (lighting) lighting.dress(root);
+	if (lighting) lighting.dress(root, dressOptions(spec.key));
 	return chunk.layers[spec.key];
 }
 
@@ -1536,7 +1644,10 @@ function applyShown() {
 	LAYERS.forEach((spec, i) => {
 		const L = chunk.layers[spec.key];
 		if (!L) return;
-		const on = shown[i] && !(v && VARIANT_REPLACES.includes(spec.key));
+
+		const on = shown[i] && !(v && VARIANT_REPLACES.includes(spec.key))
+			&& !(spec.key === 'surfaces' && coverOn)
+			&& !(PAINTED_REPLACES.includes(spec.key) && paintedActive());
 		L.root.visible = on;
 		if (L.collider) L.collider.collider.setEnabled(on);
 	});
@@ -1594,9 +1705,6 @@ async function setVariant(i) {
 		await ensureVariant(variants[i]);
 		variantIndex = i;
 
-		picked = null;
-		showPicked(null, null, null);
-
 		pickEdges();
 		if (editRoad !== null) { editRoad = null; disposeEdit(); }
 		applyShown();
@@ -1621,7 +1729,34 @@ function tileRoadTriangles() {
 
 let busy = false;
 
+async function setLayer(i, on) {
+	if (busy || i < 0 || i >= LAYERS.length) return;
+	busy = true;
+	try {
+		if (on) await ensureLayer(LAYERS[i]);
 
+		if (LAYERS[i].key === 'painted' && !on) {
+			for (const key of PAINTED_REPLACES) {
+				const j = LAYERS.findIndex((spec) => spec.key === key);
+				if (j >= 0 && shown[j]) await ensureLayer(LAYERS[j]);
+			}
+		}
+		shown[i] = on;
+
+		if (seamCache.tile) {
+			scene.remove(seamCache.tile.line);
+			delete seamCache.tile;
+		}
+		applyShown();
+		const L = chunk.layers[LAYERS[i].key];
+		status(L === null
+			? `${LAYERS[i].key}: this box has no ${LAYERS[i].key} layer — ${LAYERS[i].note}`
+			: `${LAYERS[i].key} ${on ? 'on' : 'off'} — ${drawnTriangles().toLocaleString()} `
+				+ `triangles in the section`);
+	} finally {
+		busy = false;
+	}
+}
 
 
 
@@ -1650,6 +1785,10 @@ function renderLayers() {
 		if (v && VARIANT_REPLACES.includes(spec.key)) {
 			return `${key} <span class="dim">${spec.key.padEnd(10)} `
 				+ `&mdash; replaced by ${v.name}</span>`;
+		}
+		if (PAINTED_REPLACES.includes(spec.key) && paintedActive()) {
+			return `${key} <span class="dim">${spec.key.padEnd(10)} `
+				+ `&mdash; cut into painted</span>`;
 		}
 		const mark = shown[i]
 			? '<span class="on">&#9679; on </span>'
@@ -1717,8 +1856,9 @@ async function loadChunk() {
 	}
 	const meta = await metaRes.json();
 
-	if (!meta.layers || !Object.keys(meta.layers).length) {
-		throw new Error('this level has no layers');
+	const DRIVABLE_KEYS = LAYERS.filter((l) => l.drive).map((l) => l.key);
+	if (!meta.layers || !DRIVABLE_KEYS.some((k) => meta.layers[k])) {
+		throw new Error('this level has no drivable surface');
 	}
 	chunk = { meta, layers: {} };
 
@@ -1821,6 +1961,11 @@ async function loadTrees() {
 	if (!chunk || !chunk.meta || !chunk.meta.trees) return;
 	try {
 		const { buildTrees } = await import(`./trees.js${MODULE_STAMP}`);
+
+		const wanted = chunk.meta.trees && chunk.meta.trees.density;
+		if (typeof wanted === 'number' && wanted >= 0 && wanted <= 1) {
+			treeDensity = wanted;
+		}
 		forest = await buildTrees(url(`${CHUNK}.trees`, 'json'), { density: treeDensity });
 		if (forest) {
 			forest.group.visible = treesOn;
@@ -1979,6 +2124,91 @@ async function loadTraffic() {
 }
 
 window.look = {
+
+	async cover(strength) {
+		if (!coverMod) return { error: 'cover module not attached' };
+		if (strength !== undefined && Number(strength) > 0 && !coverMod.haveCover()) {
+			if (!chunk.meta.cover) return { error: 'no cover texture built for this cut' };
+
+			if (!coverLoading) {
+				coverLoading = coverMod.loadCover(THREE, {
+					id: url(`${CHUNK}.cover`, 'png'),
+					far: url(`${CHUNK}.cover.far`, 'png'),
+				}, chunk.meta.cover).then((got) => {
+					coverMod.setAnisotropy(renderer.capabilities.getMaxAnisotropy());
+					applyWorldTones();
+					return got;
+				});
+			}
+			await coverLoading;
+		}
+		if (strength !== undefined) {
+			coverMod.writeCover(Number(strength));
+			coverOn = Number(strength) > 0;
+			applyShown();
+		}
+		return Object.assign(coverMod.coverState(),
+			{ meshCoverVisible: !coverOn, materials: coverAttached });
+	},
+
+	flat(opts) {
+		if (opts) {
+			for (const k of ['lift', 'factor', 'units', 'depthWrite', 'renderOrder']) {
+				if (opts[k] !== undefined) COVER_FLAT[k] = opts[k];
+			}
+		}
+		const n = applyCoverFlat();
+		return Object.assign({}, COVER_FLAT, {
+			materials: n,
+			lift_real_m: +(COVER_FLAT.lift / 1.6).toFixed(4),
+			meshCoverVisible: !coverOn,
+			note: 'lift is DRAWN meters; -0.016 cancels surfaces.SURFACE_LIFT_M',
+		});
+	},
+
+	async painted(on) {
+		const i = LAYERS.findIndex((spec) => spec.key === 'painted');
+		const info = chunk && chunk.meta && chunk.meta.layers
+			&& chunk.meta.layers.painted;
+		if (i < 0 || !info) {
+			return { error: `this cut has no painted layer — ${CHUNK} was not built `
+				+ `by the level tools, so ground + surfaces is all there is` };
+		}
+		if (on !== undefined) await setLayer(i, !!on);
+		return {
+			on: shown[i],
+			showing: shown[i] ? 'one mesh: the cover IS the terrain'
+				: 'two meshes: terrain + the cover laid on it',
+			triangles: info.triangles,
+			replaces: PAINTED_REPLACES.map((k) => {
+				const L = chunk.meta.layers[k];
+				return `${k} ${L ? L.triangles.toLocaleString() : '?'}`;
+			}).join(' + '),
+			cover_triangles: info.cover_triangles,
+			terrain_triangles: info.terrain_triangles,
+			orphans: info.orphan,
+			note: 'air is not a measurement on this layer: the cover triangles ARE '
+				+ 'terrain triangles, so there is nothing between them',
+		};
+	},
+	shadows() {
+		if (!chunk || !chunk.layers) return { error: 'no chunk' };
+		const out = {};
+		for (const spec of LAYERS) {
+			const L = chunk.layers[spec.key];
+			if (!L || !L.root) continue;
+			let meshes = 0, cast = 0, receive = 0;
+			L.root.traverse((o) => {
+				if (!o.isMesh) return;
+				meshes++;
+				if (o.castShadow) cast++;
+				if (o.receiveShadow) receive++;
+			});
+			out[spec.key] = { meshes, cast, receive };
+		}
+		out._noCast = NO_CAST_LAYERS.slice();
+		return out;
+	},
 
 	clouds() {
 		return lighting
@@ -2324,6 +2554,8 @@ let padZoomRate = 1.1;
 let padZoomInvert = false;
 
 let padReset = false;
+
+
 let padSnap = false;
 
 let padOrbit = false;
@@ -2724,6 +2956,22 @@ function setFlying(on) {
 	}
 }
 
+window.__place = (eye, at) => {
+	if (!Array.isArray(eye) || eye.length !== 3 || !eye.every(Number.isFinite)) {
+		return { error: 'eye must be [x, height, z]' };
+	}
+	setFlying(true);
+	camera.position.set(eye[0], eye[1], eye[2]);
+	if (Array.isArray(at) && at.length === 3 && at.every(Number.isFinite)) {
+		controls.target.set(at[0], at[1], at[2]);
+	}
+	controls.update();
+	return {
+		eye: [camera.position.x, camera.position.y, camera.position.z].map((v) => +v.toFixed(2)),
+		at: [controls.target.x, controls.target.y, controls.target.z].map((v) => +v.toFixed(2)),
+	};
+};
+
 function flyStep(dt) {
 	const speed = FLY_SPEED * (keys.ShiftLeft || keys.ShiftRight ? 4 : 1) * dt;
 	_move.set(0, 0, 0);
@@ -2744,6 +2992,39 @@ function flyStep(dt) {
 		controls.target.add(_move);
 	}
 	controls.update();
+}
+
+const AIR_YAW_RATE = 2.4;
+const AIR_PITCH_RATE = 1.9;
+const AIR_AUTHORITY = 5.0;
+
+function carAirborne() {
+	const c = car && car.controller;
+	if (!c || typeof c.wheelIsInContact !== 'function') return false;
+	for (let i = 0; i < 4; i++) if (c.wheelIsInContact(i)) return false;
+	return true;
+}
+
+function airControlStep(dt, input) {
+	if (!carAirborne()) return;
+	const steer = typeof input.steer === 'number'
+		? input.steer
+		: (input.left ? 1 : 0) + (input.right ? -1 : 0);
+	const pitch = (input.forward ? 1 : 0) + (input.back ? -1 : 0);
+	if (!steer && !pitch) return;
+
+	_fwd.set(0, 0, -1).applyQuaternion(car.chassis.rotation());
+	_right.crossVectors(_fwd, _UP).normalize();
+	const av = car.chassis.angvel();
+	const wantX = _right.x * pitch * AIR_PITCH_RATE + 0 * steer;
+	const wantY = steer * AIR_YAW_RATE + _right.y * pitch * AIR_PITCH_RATE;
+	const wantZ = _right.z * pitch * AIR_PITCH_RATE;
+	const k = Math.min(1, AIR_AUTHORITY * dt);
+	car.chassis.setAngvel({
+		x: av.x + (wantX - av.x) * k,
+		y: av.y + (wantY - av.y) * k,
+		z: av.z + (wantZ - av.z) * k,
+	}, true);
 }
 
 let lookYaw = 0;
@@ -3097,7 +3378,7 @@ function respawn(why) {
 	if (why) status(`${why} — back at the start`);
 }
 
-
+let neonBusy = false;
 
 
 
@@ -3163,7 +3444,28 @@ let spoilerOn = ['1', 'on', 'true', 'yes']
 let cinematicOn = false;
 
 
-
+function toggleNeon() {
+	if (neonBusy) return;
+	const want = !neonOn;
+	neonBusy = true;
+	neonOn = want;
+	status(want ? 'neon building outlines — on…' : 'neon building outlines — off');
+	applyNeon(want).then((built) => {
+		if (want && !built) {
+			neonOn = false;
+			status('neon outlines unavailable on this cut');
+			return;
+		}
+		if (want) {
+			const s = built.stats;
+			status(`neon building outlines — ${s.lit} of ${s.buildings} lit`);
+		}
+	}).catch((err) => {
+		neonOn = false;
+		console.warn('[neon] toggle failed:', err);
+		status('neon outlines failed');
+	}).finally(() => { neonBusy = false; });
+}
 
 
 
@@ -3178,6 +3480,10 @@ function handleKey(e) {
 	if (mapView && mapView.isOpen && e.key !== 'Escape') return true;
 
 	switch (e.key) {
+
+	case 'n': case 'N':
+		toggleNeon();
+		return true;
 
 	case 'm': case 'M':
 		if (window.driveMenu) {
@@ -3300,11 +3606,8 @@ function setHTML(el, html, name) {
 		for (const [k, n] of domWrites) {
 			if (n > DOM_WRITE_WARN && !domWarned.has(k)) {
 				domWarned.add(k);
-				console.warn(`[dom] ${k} rewrote ${n} times in a second `
-					+ `(budget ${DOM_WRITE_WARN}). An innerHTML write is a parse, a style `
-					+ `recalc and a layout -- this will stutter the world. Throttle it, or `
-					+ `round the value it prints so the unchanged-text guard can work.`);
-				status(`⚠ ${k} is rewriting ${n}x/s — see the console`);
+				console.warn(`[dom] ${k} rewrote ${n} times in a second `);
+				status(`${k} is rewriting ${n}x/s`);
 			}
 		}
 		domWrites.clear();
@@ -3513,8 +3816,11 @@ function applySpeedo() {
 	} catch (err) {   }
 }
 
+
+
 function updateSpeedo(dt) {
 	if (!speedoOn || !speedoEls || !car) return;
+
 	const mph = car.speedMph;
 	speedoNeedle += (mph - speedoNeedle) * (1 - Math.exp(-dt * SPEEDO_LAG));
 	const frac = Math.min(speedoNeedle, SPEEDO_MAX_MPH) / SPEEDO_MAX_MPH;
@@ -3894,6 +4200,7 @@ function applyGps() {
 
 function updateGps() {
 	if (!gpsOn || !gps || !car) return;
+
 	const p = car.renderPos;
 	_gpsFwd.set(0, 0, -1).applyQuaternion(car.renderQuat);
 
@@ -4192,7 +4499,6 @@ function renderHud() {
 		+ (rainbowOn ? '  <span class="off">RAINBOW</span>' : '')
 		+ (texOn ? '  <span class="on">ASPHALT</span>' : '')
 		+ (flatOn ? '  <span class="off">FLAT</span>' : '  <span class="on">SMOOTH</span>')
-		+ (inspectOn ? '  <span class="off">PICK</span>' : '')
 
 		+ (waterNearGround && !renderer.capabilities.logarithmicDepthBuffer
 			? '  <span class="off">WATER · NO LOGDEPTH</span>' : '')
@@ -4350,9 +4656,11 @@ function frame(now) {
 
 	if (padNow && padNow.reset && !padReset) {
 		if (flying) setFlying(false);
+
 		respawn('respawned');
 	}
 	padReset = !!(padNow && padNow.reset);
+
 	if (padNow && !padSeen) {
 		padSeen = true;
 		;
@@ -4404,6 +4712,8 @@ function frame(now) {
 	let steps = 0;
 	while (physAccum >= physDt && steps < PHYS_CAP) {
 		car.update(physDt, input);
+
+		airControlStep(physDt, input);
 		world.step();
 		car.recordPose();
 		meter.sample(car, physDt);
@@ -4484,6 +4794,7 @@ function frame(now) {
 	mark = pMark();
 	if (lighting) {
 		try {
+
 			lightFocus.copy(flying ? camera.position : car.chassis.translation());
 			lighting.update(dt, lightFocus);
 			tickWorldTones();
@@ -4527,6 +4838,7 @@ function frame(now) {
 	mark = pMark();
 	if (traffic) {
 		try {
+
 			trafficFocus.copy(flying ? camera.position : car.chassis.translation());
 
 			traffic.update(dt, trafficFocus,
@@ -4632,6 +4944,12 @@ async function buildMenu() {
 	});
 
 	p.toggle({
+		label: 'neon building outlines',
+		get: () => neonOn,
+		set: (v) => { if (v !== neonOn) toggleNeon(); },
+	});
+
+	p.toggle({
 		label: 'touch controls',
 		get: () => touchOn,
 		set: (v) => { touchOn = v; applyTouch(); },
@@ -4734,6 +5052,8 @@ async function boot() {
 	for (let i = 0; i < LAYERS.length; i++) {
 		if (!shown[i]) continue;
 		if (varying && VARIANT_REPLACES.includes(LAYERS[i].key)) continue;
+
+		if (PAINTED_REPLACES.includes(LAYERS[i].key) && paintedActive()) continue;
 		await ensureLayer(LAYERS[i]);
 	}
 	applyShown();
@@ -4755,6 +5075,11 @@ async function boot() {
 
 		if (biasReg) biasReg.register(water.material, 'water');
 		water.fit();
+
+		if (chunk.meta && chunk.meta.water && chunk.meta.water.draw === false) {
+			waterOn = false;
+			;
+		}
 		water.setVisible(waterOn);
 	} catch (err) {
 		console.warn('[water] sheet not built:', err && err.message ? err.message : err);
@@ -4782,6 +5107,12 @@ async function boot() {
 		dressScene();
 
 		applyStyleExtras(lighting.style);
+
+		const cloudsQS = parseFloat(
+			new URLSearchParams(location.search).get('clouds'));
+		if (Number.isFinite(cloudsQS)) {
+			lighting.clouds = Math.max(0, Math.min(1, cloudsQS));
+		}
 
 		try {
 			await lastTintPass;

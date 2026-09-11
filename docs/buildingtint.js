@@ -7,32 +7,23 @@ export const WELD_M = 0.25;
 export const TINT_LEVELS = {
 	upstream: {
 		label: 'standard (42% tinted)',
-		blurb: 'Their palette exactly: a white city with a coloured minority.',
 		share: 0.42, satCap: 0.30, neutralSat: 1.0, lightDrop: 0.00,
 	},
 	noticeable: {
 		label: 'noticeable',
-		blurb: 'More blocks take a hue, the greys become creams and bones, and the whole '
-			+ 'band comes down enough for any of it to survive the fill light.',
 		share: 0.58, satCap: 0.42, neutralSat: 2.4, lightDrop: 0.07,
 	},
 	bold: {
 		label: 'bold',
-		blurb: 'A coloured city rather than a white one. Furthest from their brief and the '
-			+ 'easiest to judge — if this still reads white, the defect is not the palette.',
 		share: 0.76, satCap: 0.58, neutralSat: 3.6, lightDrop: 0.13,
 	},
 	white: {
 		label: 'white city',
-		blurb: 'Value only, no hue anywhere. The control — what the massing looks like with '
-			+ 'the colour argument removed entirely.',
 		share: 0.0, satCap: 0.30, neutralSat: 0.35, lightDrop: 0.00,
 	},
 
 	neon: {
 		label: 'neon (near-black)',
-		blurb: 'The dark city the neon outlines are drawn against. Keeps the per-building '
-			+ 'variety and takes it down to where a tube can out-shine it.',
 		share: 0.76, satCap: 0.58, neutralSat: 3.6, lightDrop: 0.002,
 		lightGain: 0.024, floorScale: 0.012,
 	},
@@ -47,26 +38,18 @@ export function setLevel(id) { LEVEL = TINT_LEVELS[id] || TINT_LEVELS[DEFAULT_TI
 export const SHADE_LEVELS = {
 	off: {
 		label: 'off (flat albedo)',
-		blurb: 'Every face at full colour. The record of what the page looked like before '
-			+ 'facade shading, and the control this is judged against.',
 		roof: 1.0, top: 1.0, base: 1.0,
 	},
 	gentle: {
 		label: 'gentle',
-		blurb: 'Half of upstream. For if their contrast reads too heavy under OUR fill light, '
-			+ 'which carries about three times theirs.',
 		roof: 0.97, top: 0.83, base: 0.68,
 	},
 	upstream: {
 		label: 'standard (0.42 → 0.66)',
-		blurb: 'Their numbers exactly: walls 0.42 at the ground and 0.66 at the roofline, '
-			+ 'roofs 0.94. A pale roof over a distinctly darker wall.',
 		roof: 0.94, top: 0.66, base: 0.42,
 	},
 	deep: {
 		label: 'deep',
-		blurb: 'Past upstream — a harder contact darkening at the foot. The far end of the '
-			+ 'axis, so if the truth is beyond their numbers it is reachable without an edit.',
 		roof: 0.94, top: 0.58, base: 0.26,
 	},
 };

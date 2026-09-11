@@ -1024,8 +1024,7 @@ export async function createLighting(scene, renderer, opts = {}) {
 			bakeEnv(true);
 		},
 		styles: Object.keys(sky.STYLES).map((id) => ({
-			id, label: sky.STYLES[id].label || id, blurb: sky.STYLES[id].blurb || '',
-			world: sky.STYLES[id].world || 'bench',
+			id, label: sky.STYLES[id].label || id, world: sky.STYLES[id].world || 'bench',
 
 			clouds: sky.STYLES[id].clouds,
 			cloudKind: sky.STYLES[id].cloudKind,

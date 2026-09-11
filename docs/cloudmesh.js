@@ -118,15 +118,9 @@ const SHADE_GLSL =   `
 	float cloudUp = clamp(vCloudUp * 0.5 + 0.5, 0.0, 1.0);
 	float cloudK = mix(1.0, cloudUp, uShade);
 	diffuseColor.rgb *= mix(uShadow, vec3(1.0), cloudK);
-	// AERIAL PERSPECTIVE. Distance is not a size cue on a field of randomly-sized objects: a
-	// small cloud near and a big one far subtend the same angle, so at equal contrast the eye has
-	// nothing to rank them by. Contrast falling with range is the cue real skies use, and it is
-	// what makes the deck read as curving away rather than as a flat ceiling of equal lumps.
+
 	diffuseColor.rgb = mix(diffuseColor.rgb, uHaze, vCloudFar * uHazeAmt);
-	// ⭐⭐ AND THEN, IN THE LAST BAND ONLY, ALL THE WAY TO THE SKY. See RIM_COLOR_FADE. This
-	// runs AFTER the haze on purpose: the haze is a partial, style-tinted recession that must
-	// still read as cloud, and this is the terminal one that must read as nothing. Ordering
-	// them the other way would let the haze pull a fully-faded cloud back OUT of the sky.
+
 	diffuseColor.rgb = mix(diffuseColor.rgb, uSky, vRim);
 `;
 

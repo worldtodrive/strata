@@ -83,7 +83,7 @@ export function buildSignalHold(graph, signals) {
 
 	const report = `${matched} of ${signals.heads.length} heads mapped to `
 		+ `${byNode.size.toLocaleString()} controlled lanes`
-		+ (unmatched ? ` · ⚠️ ${unmatched} matched no lane within ${MATCH_RADIUS_M} m` : '')
+		+ (unmatched ? ` · ${unmatched} matched no lane within ${MATCH_RADIUS_M} m` : '')
 		+ `, ${STOP_SETBACK_M} m setback`;
 
 	return { stopS, mayGo, report, controlled: byNode.size, matched, unmatched };

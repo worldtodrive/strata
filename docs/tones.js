@@ -3,7 +3,7 @@
 export const WORLD_TONES = {
 
 	bench: {
-		label: 'bench greys',
+		label: 'bench grays',
 		road: 0x8d939c, slab: 0x5f646b, ground: 0x6f7a63, junctions: 0x9aa0a8,
 		paint: 0xd8d8d0, surfaces: 0xb4ac96, buildings: 0x7d7f86,
 		garages: 0x8f9089,
@@ -77,45 +77,31 @@ export function gradeTone(hex, gain) {
 export const GRADES = {
 	off: {
 		label: 'none (as authored)',
-		blurb: 'The albedo exactly as the palette declares it. The before-picture.',
 		harmony: 0, sat: 1, lift: 0,
 	},
 	airy: {
 		label: 'airy',
-		blurb: 'A touch of sky in everything. Nothing else moves — the safest step away '
-			+ 'from the current look.',
 		harmony: 0.16, sat: 0.95, lift: 0.02,
 	},
 	hazy: {
 		label: 'hazy',
-		blurb: 'Air between you and the ground. Green stops arguing with the sky and the '
-			+ 'whole frame reads as one time of day.',
 		harmony: 0.32, sat: 0.85, lift: 0.05,
 	},
 	pastel: {
 		label: 'pastel',
-		blurb: 'Lowest contrast of the six. Soft, storybook, everything close together in '
-			+ 'value — the furthest from a survey render.',
 		harmony: 0.28, sat: 0.68, lift: 0.14,
 	},
 	dusty: {
 		label: 'dusty',
-		blurb: 'The strongest blend. At sunset the ground goes properly warm; at midnight '
-			+ 'it goes properly blue. Most dramatic at the edges of the day.',
 		harmony: 0.42, sat: 0.72, lift: 0.08,
 	},
 	crisp: {
 		label: 'crisp',
-		blurb: 'The other direction — more separation, not less. Here to prove the axis '
-			+ 'has two ends rather than because anyone asked for it.',
 		harmony: 0.08, sat: 1.12, lift: 0,
 	},
 
 	retro: {
 		label: 'retro (vaporwave)',
-		blurb: 'Cyan shadows, magenta highlights, lifted blacks. The lift is the signature — '
-			+ 'a VHS dub never reaches true black, and that milky shadow is most of why the '
-			+ 'era looks like the era.',
 		harmony: 0, sat: 1, lift: 0,
 		split: {
 			shadowHue: 0.5, shadowAmt: 0.3, highlightHue: 0.88, highlightAmt: 0.26,
@@ -125,9 +111,6 @@ export const GRADES = {
 	},
 	cyber: {
 		label: 'cyber (neon)',
-		blurb: 'Hot pink against deep blue, crushed blacks, a violet carriageway. The strong '
-			+ 'one — every axis further than retro, and the blacks go down rather than up '
-			+ 'because that contrast is what makes neon read as neon.',
 		harmony: 0, sat: 1, lift: 0,
 		split: {
 			shadowHue: 0.57, shadowAmt: 0.74, highlightHue: 0.92, highlightAmt: 0.82,

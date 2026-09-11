@@ -9,18 +9,18 @@
 <meta name="apple-mobile-web-app-title" content="Strata">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="canonical" href="https://drivestrata.io/">
-<meta name="description" content="A driving demo built on real streets. Two levels in Dallas, in your browser, no install.">
+<meta name="description" content="A driving demo built on real streets. Three levels in Dallas, in your browser, no install.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Strata">
 <meta property="og:title" content="Strata">
-<meta property="og:description" content="A driving demo built on real streets. Two levels in Dallas, in your browser, no install.">
+<meta property="og:description" content="A driving demo built on real streets. Three levels in Dallas, in your browser, no install.">
 <meta property="og:url" content="https://drivestrata.io/">
 <meta property="og:image" content="https://drivestrata.io/og.png">
-<meta property="og:image:alt" content="A driving demo built on real streets. Two levels in Dallas, in your browser, no install.">
+<meta property="og:image:alt" content="A driving demo built on real streets. Three levels in Dallas, in your browser, no install.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://drivestrata.io/og.png">
 <meta name="twitter:title" content="Strata">
-<meta name="twitter:description" content="A driving demo built on real streets. Two levels in Dallas, in your browser, no install.">
+<meta name="twitter:description" content="A driving demo built on real streets. Three levels in Dallas, in your browser, no install.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -442,10 +442,7 @@
 	#menu-body table.keys {
 		width: 100%; border-collapse: collapse; font-size: 13px;
 	}
-	/* ⚠️ NO BORDER ON THE HEADER ROW. It was a 1 px rule under the first cell
-	   only, which stopped dead at 42% of the width and read as a rendering fault
-	   rather than a divider. The row borders below already give the table its
-	   structure. */
+
 	#menu-body table.keys th {
 		text-align: left; padding: 14px 0 6px; color: #7f8ca6;
 		font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
@@ -475,7 +472,7 @@
 	}
 }
 </script>
-<script>window.__levels=[{"cut":"highfive2600","name":"High Five","bytes":45192096,"stamp":"02344cfdb4cd"},{"cut":"thevillage","name":"The Village","bytes":37740534,"stamp":"a8f56c54899a"}];window.__carBytes=1934124;(function(){var L=window.__levels,s=null;try{s=localStorage.getItem("strata.level");}catch(e){}var p=null;for(var i=0;i<L.length;i++){if(L[i].cut===s){p=L[i];break;}}if(!p)p=L[0];window.__level=p.cut;window.__levelName=p.name;window.__payloadBytes=p.bytes+window.__carBytes;window.__dataStamp=p.stamp;})();</script>
+<script>window.__levels=[{"cut":"highfive2600","name":"High Five","bytes":44320176,"stamp":"f793f53862d6"},{"cut":"smu","name":"SMU","bytes":44453387,"stamp":"d8eda20b07eb"},{"cut":"thevillage","name":"The Village","bytes":39218004,"stamp":"4b99c5c26672"}];window.__carBytes=1934124;(function(){var L=window.__levels,s=null;try{s=localStorage.getItem("strata.level");}catch(e){}var p=null;for(var i=0;i<L.length;i++){if(L[i].cut===s){p=L[i];break;}}if(!p)p=L[0];window.__level=p.cut;window.__levelName=p.name;window.__payloadBytes=p.bytes+window.__carBytes;window.__dataStamp=p.stamp;})();</script>
 <style>
 @media all and (display-mode: standalone) {
 	#hud { padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
@@ -485,8 +482,7 @@
 		right: calc(22px + env(safe-area-inset-right));
 		bottom: calc(22px + env(safe-area-inset-bottom));
 	}
-	/* The card is centred by flex, so it needs the insets as padding on the
-	   overlay rather than as an offset. */
+
 	#menu-overlay {
 		padding: env(safe-area-inset-top) env(safe-area-inset-right)
 			env(safe-area-inset-bottom) env(safe-area-inset-left);
@@ -643,10 +639,11 @@
 					<tr><th>camera</th><th></th><th></th></tr>
 					<tr><td>change view</td><td><kbd>/</kbd></td><td>R1 &middot; RB &middot; R</td></tr>
 					<tr><td>look around</td><td><kbd>K</kbd>, then the mouse</td><td>right stick, R3</td></tr>
-					<tr><td>recentre behind the car</td><td><kbd>Z</kbd></td><td>L1 or L3</td></tr>
+					<tr><td>recenter behind the car</td><td><kbd>Z</kbd></td><td>L1 or L3</td></tr>
 					<tr><th>display</th><th></th><th></th></tr>
 					<tr><td>speedometer</td><td><kbd>P</kbd></td><td>&mdash;</td></tr>
 					<tr><td>minimap</td><td><kbd>O</kbd></td><td>&mdash;</td></tr>
+					<tr><td>neon building outlines</td><td><kbd>N</kbd></td><td>&mdash;</td></tr>
 					<tr><th>menu</th><th></th><th></th></tr>
 					<tr><td>open, close</td><td><kbd>M</kbd> &middot; <kbd>Esc</kbd></td><td>Options &middot; Start &middot; + <span class="dim">(or the touchpad)</span></td></tr>
 					<tr><td>move, change a setting</td><td><kbd>&uarr;</kbd><kbd>&darr;</kbd> <kbd>&larr;</kbd><kbd>&rarr;</kbd></td><td>d-pad</td></tr>
@@ -661,10 +658,11 @@
 				<p>Strata sits on the boundary between cozy driving game and geospatial
 					simulation with an ambitious goal: drive anywhere in the world at 1:1
 					scale using open data and procedural generation.</p>
-				<p>Here in this initial demo you can drive two levels rendered in the
+				<p>Here in this initial demo you can drive three levels rendered in the
 					Dallas, TX area:</p>
 				<p>1. High Five Interchange (US-75 x I-635)<br>
-					2. The Village neighborhood</p>
+					2. SMU campus (Southern Methodist University)<br>
+					3. The Village neighborhood</p>
 								<h3>credits</h3>
 				<p>Map data &copy; <a href="https://www.openstreetmap.org/copyright"
 					>OpenStreetMap</a> contributors, licensed under the
@@ -676,7 +674,7 @@
 					<a href="https://creativecommons.org/licenses/by/4.0/">CC&nbsp;BY&nbsp;4.0</a>
 					and modified for this game.</p>
 				<p class="dim">Rendered with <b>three.js</b> r160 (MIT) and
-					<b>Rapier</b> 0.19.3 (Apache-2.0). Full licence texts ship in
+					<b>Rapier</b> 0.19.3 (Apache-2.0). Full license texts ship in
 					vendor/ alongside the libraries.</p>
 			</section>
 
@@ -743,7 +741,13 @@
 		window.driveMenu = api;
 
 		window.addEventListener('keydown', function (e) {
-			if (e.key === 'Escape') { api.toggle(); e.preventDefault(); }
+			if (e.key !== 'Escape') return;
+			if (window.driveDismissCard && window.driveDismissCard()) {
+				e.preventDefault();
+				return;
+			}
+			api.toggle();
+			e.preventDefault();
 		});
 
 		var shown = 0;

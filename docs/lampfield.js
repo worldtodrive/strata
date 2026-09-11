@@ -172,10 +172,7 @@ const CHUNK_GRAD =   `
 			float il = texture2D( uLampField, lampUv - vec2( e.x, 0.0 ) ).r;
 			float iu = texture2D( uLampField, lampUv + vec2( 0.0, e.y ) ).r;
 			float id = texture2D( uLampField, lampUv - vec2( 0.0, e.y ) ).r;
-			// Normalised by the centre value, so the tilt depends on the SHAPE of the
-			// falloff and not on how bright this particular family is — otherwise a
-			// highway mast would light a car from a different angle than a park lantern
-			// standing the same distance away.
+
 			vec2 grad = vec2( ir - il, iu - id ) / max( lampTex.r, 1e-4 );
 			vec3 L = normalize( vec3( grad.x * ${GRAD_TILT.toFixed(2)}, 1.0, grad.y * ${GRAD_TILT.toFixed(2)} ) );
 			float nl = dot( normalize( geometryNormal ), L );

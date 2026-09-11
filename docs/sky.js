@@ -260,7 +260,6 @@ export const STYLES = {
 
 	'first-pass': {
 		label: 'first pass',
-		blurb: 'The sky you approved. Hemisphere ambient only, smooth shading, bench greys.',
 		day: {},
 		env: 0,
 		flat: false,
@@ -271,8 +270,6 @@ export const STYLES = {
 
 	sunlit: {
 		label: 'sunlit',
-		blurb: 'Image-based ambient, strong key, saturated world tones. Colour that holds its '
-			+ 'shadows instead of washing out.',
 		day: {
 			sunIntensity: 4.0,
 			hemiIntensity: 1.1,
@@ -290,8 +287,6 @@ export const STYLES = {
 
 	origami: {
 		label: 'origami',
-		blurb: 'Flat shading — every facet one tone, folded-paper. Matte, bright, and the '
-			+ 'cheapest to draw: no extra geometry, and it kills the specular pass.',
 		day: {
 			sunIntensity: 3.6,
 			hemiIntensity: 2.4,
@@ -310,9 +305,6 @@ export const STYLES = {
 
 	'standard': {
 		label: 'standard',
-		blurb: 'Their daytime look, transcribed: bright flat sky, near-white faceted clouds, dark '
-			+ 'saturated world under a very high fill.',
-
 		day: {
 			sunIntensity: 4.0,
 			hemiIntensity: 3.9,
@@ -371,7 +363,6 @@ export const STYLES = {
 
 	overcast: {
 		label: 'overcast',
-		blurb: 'Soft, high ambient and a low key. The other end of the contrast range.',
 		day: {
 			sunIntensity: 1.6,
 			hemiIntensity: 2.2,
@@ -390,9 +381,6 @@ export const STYLES = {
 
 	vaporwave: {
 		label: 'vaporwave — pink sky',
-		blurb: 'Pink sky, electric-blue clouds, violet carriageway over a near-black floor. '
-			+ 'The default arm: "I prefer the cyber neon option with the pink sky."',
-
 		day: {
 			sunIntensity: 4.0,
 			hemiIntensity: 3.9,
@@ -474,8 +462,6 @@ export const STYLES = {
 
 	'vaporwave-blue': {
 		label: 'vaporwave — blue sky',
-		blurb: 'The blue sky with pink clouds, and the soft orange sunset the grade found on '
-			+ 'its own. Same neon world underneath.',
 		day: {
 			sunIntensity: 4.0,
 			hemiIntensity: 3.9,
