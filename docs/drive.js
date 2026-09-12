@@ -319,9 +319,12 @@ function applyWorldTones() {
 			if (!L || !L.root) continue;
 
 			const painted = spec.key === 'painted';
+
+			const lines = spec.key === 'lines';
+			const toneKey = lines ? 'paint' : spec.key;
 			if (painted) {
 				if (P.ground === undefined) continue;
-			} else if (P[spec.key] === undefined) {
+			} else if (P[toneKey] === undefined) {
 				continue;
 			}
 
@@ -335,8 +338,8 @@ function applyWorldTones() {
 				continue;
 			}
 
-			const coverKey = painted ? 'surfaces' : spec.key;
-			const hex = tonedColour(painted ? 'ground' : spec.key);
+			const coverKey = painted ? 'surfaces' : toneKey;
+			const hex = tonedColour(painted ? 'ground' : toneKey);
 
 			const unify = (spec.key === 'surfaces' || painted) && P.ground !== undefined
 				? (P.unify || 0) : 0;
@@ -350,7 +353,8 @@ function applyWorldTones() {
 					o.material.color.setHex(tonedColour('ground'));
 					return;
 				}
-				let albedo = categoryTones
+
+				let albedo = (categoryTones || lines)
 					? o.material.userData.albedo : undefined;
 				if (albedo !== undefined && unify) {
 					albedo = mixTone(albedo, P.ground, unify);
@@ -533,7 +537,7 @@ function applyTreeTint(spec) {
 	});
 }
 
-const NO_CAST_LAYERS = ['surfaces'];
+const NO_CAST_LAYERS = ['surfaces', 'paint', 'lines'];
 
 function dressOptions(key) {
 	return NO_CAST_LAYERS.includes(key) ? { cast: false, receive: true } : undefined;
@@ -639,6 +643,9 @@ const LAYERS = [
 	{ key: 'painted', drive: true, tone: 0x6f7a63, bias: 'terrain',
 		note: 'the terrain with the ground cover cut INTO it — one mesh, '
 			+ 'replaces ground + surfaces' },
+
+	{ key: 'lines', drive: false, tone: 0xd8d8d0, bias: 'paint',
+		note: 'lane lines' },
 ];
 
 const shown = LAYERS.map(() => true);
@@ -651,6 +658,15 @@ function paintedActive() {
 	if (!chunk || !chunk.meta || !chunk.meta.layers
 		|| !chunk.meta.layers.painted) return false;
 	const i = LAYERS.findIndex((spec) => spec.key === 'painted');
+	return i >= 0 && shown[i];
+}
+
+const LINES_REPLACES = ['paint'];
+
+function linesActive() {
+	if (!chunk || !chunk.meta || !chunk.meta.layers
+		|| !chunk.meta.layers.lines) return false;
+	const i = LAYERS.findIndex((spec) => spec.key === 'lines');
 	return i >= 0 && shown[i];
 }
 const ROAD_TONE = 0x8d939c;
@@ -1647,7 +1663,8 @@ function applyShown() {
 
 		const on = shown[i] && !(v && VARIANT_REPLACES.includes(spec.key))
 			&& !(spec.key === 'surfaces' && coverOn)
-			&& !(PAINTED_REPLACES.includes(spec.key) && paintedActive());
+			&& !(PAINTED_REPLACES.includes(spec.key) && paintedActive())
+			&& !(LINES_REPLACES.includes(spec.key) && linesActive());
 		L.root.visible = on;
 		if (L.collider) L.collider.collider.setEnabled(on);
 	});
@@ -1741,6 +1758,13 @@ async function setLayer(i, on) {
 				if (j >= 0 && shown[j]) await ensureLayer(LAYERS[j]);
 			}
 		}
+
+		if (LAYERS[i].key === 'lines' && !on) {
+			for (const key of LINES_REPLACES) {
+				const j = LAYERS.findIndex((spec) => spec.key === key);
+				if (j >= 0 && shown[j]) await ensureLayer(LAYERS[j]);
+			}
+		}
 		shown[i] = on;
 
 		if (seamCache.tile) {
@@ -1767,6 +1791,7 @@ function drawnTriangles() {
 		const L = chunk.layers[spec.key];
 		if (!L || !shown[i]) return;
 		if (v && VARIANT_REPLACES.includes(spec.key)) return;
+		if (LINES_REPLACES.includes(spec.key) && linesActive()) return;
 		n += L.triangles;
 	});
 	return n;
@@ -1789,6 +1814,10 @@ function renderLayers() {
 		if (PAINTED_REPLACES.includes(spec.key) && paintedActive()) {
 			return `${key} <span class="dim">${spec.key.padEnd(10)} `
 				+ `&mdash; cut into painted</span>`;
+		}
+		if (LINES_REPLACES.includes(spec.key) && linesActive()) {
+			return `${key} <span class="dim">${spec.key.padEnd(10)} `
+				+ `&mdash; replaced by lines</span>`;
 		}
 		const mark = shown[i]
 			? '<span class="on">&#9679; on </span>'
@@ -1834,8 +1863,7 @@ function renderLayers() {
 			? '\n<span class="off">&#9675;</span> <b>trees   </b> '
 				+ `<span class="off">${chunk.meta.trees.trees.toLocaleString()} in the cut, `
 				+ `NOT DRAWN &mdash; ${treeError || 'the module returned nothing'}</span>`
-			: '\n<span class="dim">&#9675; trees    &mdash; not in this cut; re-cut with '
-				+ 'the level tools</span>');
+			: '\n<span class="dim">&#9675; trees    &mdash; none here</span>');
 	srows += signals
 		? `\n<span class="on">&#9679;</span> <b>signals </b> `
 			+ `<span class="dim">${signals.heads} heads on ${signals.gantries} gantries</span>`
@@ -1869,8 +1897,7 @@ async function loadChunk() {
 	}
 
 	if (!meta.chains) {
-		throw new Error(`${CHUNK}.json has neither a spawn nor chains — re-cut it `
-			+ 'with the level tools');
+		throw new Error(`${CHUNK}.json has neither a spawn nor chains`);
 	}
 
 	let best = null;
@@ -2084,9 +2111,7 @@ async function loadTraffic() {
 	trafficReport = '';
 
 	if (!chunk || !chunk.meta || !chunk.meta.lanes) {
-		trafficError = 'this cut has no lanes sidecar. Run '
-			+ `<code>.venv/bin/python the level tools ${CHUNK}</code> to build one — `
-			+ 'it reads the cut&rsquo;s own box and takes seconds, and re-cutting the chunk is not needed.';
+		trafficError = 'no lane data here';
 		return;
 	}
 	try {
@@ -2108,7 +2133,10 @@ async function loadTraffic() {
 		PASS_DIALS = PASSING;
 		trafficPass = buildNpcPass(graph);
 
-		trafficHold = signals ? buildSignalHold(graph, signals) : null;
+		const linesMeta = chunk.meta.layers && chunk.meta.layers.lines;
+		trafficHold = signals ? buildSignalHold(graph, signals, {
+			setbackM: linesMeta ? linesMeta.stop_setback_m : undefined,
+		}) : null;
 		traffic = buildNpcTraffic(scene, graph, { pass: trafficPass, hold: trafficHold });
 		if (traffic) {
 			trafficReport = `${traffic.report} · ${trafficPass.report}`
@@ -2171,8 +2199,7 @@ window.look = {
 		const info = chunk && chunk.meta && chunk.meta.layers
 			&& chunk.meta.layers.painted;
 		if (i < 0 || !info) {
-			return { error: `this cut has no painted layer — ${CHUNK} was not built `
-				+ `by the level tools, so ground + surfaces is all there is` };
+			return { error: 'no painted ground here' };
 		}
 		if (on !== undefined) await setLayer(i, !!on);
 		return {
@@ -2189,6 +2216,20 @@ window.look = {
 			orphans: info.orphan,
 			note: 'air is not a measurement on this layer: the cover triangles ARE '
 				+ 'terrain triangles, so there is nothing between them',
+		};
+	},
+
+	async lines(on) {
+		const i = LAYERS.findIndex((spec) => spec.key === 'lines');
+		const info = chunk && chunk.meta && chunk.meta.layers && chunk.meta.layers.lines;
+		if (i < 0 || !info) {
+			return { error: 'no lane lines here' };
+		}
+		if (on !== undefined) await setLayer(i, !!on);
+		return {
+			on: shown[i],
+			showing: shown[i] ? 'lane lines' : 'old paint',
+			triangles: info.triangles, metres: info.metres, centre: info.centre,
 		};
 	},
 	shadows() {
@@ -2532,7 +2573,7 @@ async function loadVariants() {
 		if (only.length) variants = only;
 	} catch (err) {
 		variants = [];
-		console.warn(`no ${CHUNK}.variants.json — run the level tools to get V`, err);
+		console.warn(`no ${CHUNK}.variants.json`, err);
 	}
 }
 
@@ -3606,7 +3647,7 @@ function setHTML(el, html, name) {
 		for (const [k, n] of domWrites) {
 			if (n > DOM_WRITE_WARN && !domWarned.has(k)) {
 				domWarned.add(k);
-				console.warn(`[dom] ${k} rewrote ${n} times in a second `);
+				console.warn(`[dom] ${k} rewrote ${n} times in a second`);
 				status(`${k} is rewriting ${n}x/s`);
 			}
 		}
@@ -5054,6 +5095,7 @@ async function boot() {
 		if (varying && VARIANT_REPLACES.includes(LAYERS[i].key)) continue;
 
 		if (PAINTED_REPLACES.includes(LAYERS[i].key) && paintedActive()) continue;
+		if (LINES_REPLACES.includes(LAYERS[i].key) && linesActive()) continue;
 		await ensureLayer(LAYERS[i]);
 	}
 	applyShown();

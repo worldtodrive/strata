@@ -8,8 +8,11 @@ const MATCH_RADIUS_M = 0.5;
 
 const CELL_M = 4;
 
-export function buildSignalHold(graph, signals) {
+export function buildSignalHold(graph, signals, opts = {}) {
 	if (!signals || !signals.heads || !signals.heads.length) return null;
+
+	const setback = Number.isFinite(opts.setbackM) && opts.setbackM > 0
+		? opts.setbackM : STOP_SETBACK_M;
 
 	const cells = new Map();
 	const key = (x, z) => `${Math.floor(x / CELL_M)}:${Math.floor(z / CELL_M)}`;
@@ -58,7 +61,7 @@ export function buildSignalHold(graph, signals) {
 		}
 		matched++;
 
-		stopS[best] = Math.max(0, graph.nodes[best].length - STOP_SETBACK_M);
+		stopS[best] = Math.max(0, graph.nodes[best].length - setback);
 		const list = byNode.get(best);
 		if (list) list.push([ctl, link]);
 		else byNode.set(best, [[ctl, link]]);
@@ -84,7 +87,7 @@ export function buildSignalHold(graph, signals) {
 	const report = `${matched} of ${signals.heads.length} heads mapped to `
 		+ `${byNode.size.toLocaleString()} controlled lanes`
 		+ (unmatched ? ` · ${unmatched} matched no lane within ${MATCH_RADIUS_M} m` : '')
-		+ `, ${STOP_SETBACK_M} m setback`;
+		+ `, ${setback} m setback${setback !== STOP_SETBACK_M ? ' (from the painted stop lines)' : ''}`;
 
 	return { stopS, mayGo, report, controlled: byNode.size, matched, unmatched };
 }
