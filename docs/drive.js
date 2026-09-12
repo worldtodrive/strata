@@ -645,8 +645,7 @@ const LAYERS = [
 			+ 'replaces ground + surfaces' },
 
 	{ key: 'lines', drive: false, tone: 0xd8d8d0, bias: 'paint',
-		note: 'lane lines rebuilt from the drawn road by the level tools — replaces paint; '
-			+ 'off shows the old paint' },
+		note: 'lane lines' },
 ];
 
 const shown = LAYERS.map(() => true);
@@ -1864,8 +1863,7 @@ function renderLayers() {
 			? '\n<span class="off">&#9675;</span> <b>trees   </b> '
 				+ `<span class="off">${chunk.meta.trees.trees.toLocaleString()} in the cut, `
 				+ `NOT DRAWN &mdash; ${treeError || 'the module returned nothing'}</span>`
-			: '\n<span class="dim">&#9675; trees    &mdash; not in this cut; re-cut with '
-				+ 'the level tools</span>');
+			: '\n<span class="dim">&#9675; trees    &mdash; none here</span>');
 	srows += signals
 		? `\n<span class="on">&#9679;</span> <b>signals </b> `
 			+ `<span class="dim">${signals.heads} heads on ${signals.gantries} gantries</span>`
@@ -1899,8 +1897,7 @@ async function loadChunk() {
 	}
 
 	if (!meta.chains) {
-		throw new Error(`${CHUNK}.json has neither a spawn nor chains — re-cut it `
-			+ 'with the level tools');
+		throw new Error(`${CHUNK}.json has neither a spawn nor chains`);
 	}
 
 	let best = null;
@@ -2114,9 +2111,7 @@ async function loadTraffic() {
 	trafficReport = '';
 
 	if (!chunk || !chunk.meta || !chunk.meta.lanes) {
-		trafficError = 'this cut has no lanes sidecar. Run '
-			+ `<code>.venv/bin/python the level tools ${CHUNK}</code> to build one — `
-			+ 'it reads the cut&rsquo;s own box and takes seconds, and re-cutting the chunk is not needed.';
+		trafficError = 'no lane data here';
 		return;
 	}
 	try {
@@ -2204,8 +2199,7 @@ window.look = {
 		const info = chunk && chunk.meta && chunk.meta.layers
 			&& chunk.meta.layers.painted;
 		if (i < 0 || !info) {
-			return { error: `this cut has no painted layer — ${CHUNK} was not built `
-				+ `by the level tools, so ground + surfaces is all there is` };
+			return { error: 'no painted ground here' };
 		}
 		if (on !== undefined) await setLayer(i, !!on);
 		return {
@@ -2229,12 +2223,12 @@ window.look = {
 		const i = LAYERS.findIndex((spec) => spec.key === 'lines');
 		const info = chunk && chunk.meta && chunk.meta.layers && chunk.meta.layers.lines;
 		if (i < 0 || !info) {
-			return { error: `this cut has no lines layer — run the level tools ${CHUNK}` };
+			return { error: 'no lane lines here' };
 		}
 		if (on !== undefined) await setLayer(i, !!on);
 		return {
 			on: shown[i],
-			showing: shown[i] ? 'new lines, from the drawn road' : 'old paint, from the standard',
+			showing: shown[i] ? 'lane lines' : 'old paint',
 			triangles: info.triangles, metres: info.metres, centre: info.centre,
 		};
 	},
@@ -2579,7 +2573,7 @@ async function loadVariants() {
 		if (only.length) variants = only;
 	} catch (err) {
 		variants = [];
-		console.warn(`no ${CHUNK}.variants.json — run the level tools to get V`, err);
+		console.warn(`no ${CHUNK}.variants.json`, err);
 	}
 }
 
@@ -3510,7 +3504,7 @@ function toggleNeon() {
 	}).catch((err) => {
 		neonOn = false;
 		console.warn('[neon] toggle failed:', err);
-		status('neon outlines failed — see the console');
+		status('neon outlines failed');
 	}).finally(() => { neonBusy = false; });
 }
 
@@ -3653,11 +3647,8 @@ function setHTML(el, html, name) {
 		for (const [k, n] of domWrites) {
 			if (n > DOM_WRITE_WARN && !domWarned.has(k)) {
 				domWarned.add(k);
-				console.warn(`[dom] ${k} rewrote ${n} times in a second `
-					+ `(budget ${DOM_WRITE_WARN}). An innerHTML write is a parse, a style `
-					+ `recalc and a layout -- this will stutter the world. Throttle it, or `
-					+ `round the value it prints so the unchanged-text guard can work.`);
-				status(`${k} is rewriting ${n}x/s — see the console`);
+				console.warn(`[dom] ${k} rewrote ${n} times in a second`);
+				status(`${k} is rewriting ${n}x/s`);
 			}
 		}
 		domWrites.clear();
