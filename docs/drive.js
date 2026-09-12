@@ -319,9 +319,12 @@ function applyWorldTones() {
 			if (!L || !L.root) continue;
 
 			const painted = spec.key === 'painted';
+
+			const lines = spec.key === 'lines';
+			const toneKey = lines ? 'paint' : spec.key;
 			if (painted) {
 				if (P.ground === undefined) continue;
-			} else if (P[spec.key] === undefined) {
+			} else if (P[toneKey] === undefined) {
 				continue;
 			}
 
@@ -335,8 +338,8 @@ function applyWorldTones() {
 				continue;
 			}
 
-			const coverKey = painted ? 'surfaces' : spec.key;
-			const hex = tonedColour(painted ? 'ground' : spec.key);
+			const coverKey = painted ? 'surfaces' : toneKey;
+			const hex = tonedColour(painted ? 'ground' : toneKey);
 
 			const unify = (spec.key === 'surfaces' || painted) && P.ground !== undefined
 				? (P.unify || 0) : 0;
@@ -350,7 +353,8 @@ function applyWorldTones() {
 					o.material.color.setHex(tonedColour('ground'));
 					return;
 				}
-				let albedo = categoryTones
+
+				let albedo = (categoryTones || lines)
 					? o.material.userData.albedo : undefined;
 				if (albedo !== undefined && unify) {
 					albedo = mixTone(albedo, P.ground, unify);
@@ -533,7 +537,7 @@ function applyTreeTint(spec) {
 	});
 }
 
-const NO_CAST_LAYERS = ['surfaces'];
+const NO_CAST_LAYERS = ['surfaces', 'paint', 'lines'];
 
 function dressOptions(key) {
 	return NO_CAST_LAYERS.includes(key) ? { cast: false, receive: true } : undefined;
@@ -639,6 +643,10 @@ const LAYERS = [
 	{ key: 'painted', drive: true, tone: 0x6f7a63, bias: 'terrain',
 		note: 'the terrain with the ground cover cut INTO it — one mesh, '
 			+ 'replaces ground + surfaces' },
+
+	{ key: 'lines', drive: false, tone: 0xd8d8d0, bias: 'paint',
+		note: 'lane lines rebuilt from the drawn road by the level tools — replaces paint; '
+			+ 'off shows the old paint' },
 ];
 
 const shown = LAYERS.map(() => true);
@@ -651,6 +659,15 @@ function paintedActive() {
 	if (!chunk || !chunk.meta || !chunk.meta.layers
 		|| !chunk.meta.layers.painted) return false;
 	const i = LAYERS.findIndex((spec) => spec.key === 'painted');
+	return i >= 0 && shown[i];
+}
+
+const LINES_REPLACES = ['paint'];
+
+function linesActive() {
+	if (!chunk || !chunk.meta || !chunk.meta.layers
+		|| !chunk.meta.layers.lines) return false;
+	const i = LAYERS.findIndex((spec) => spec.key === 'lines');
 	return i >= 0 && shown[i];
 }
 const ROAD_TONE = 0x8d939c;
@@ -1647,7 +1664,8 @@ function applyShown() {
 
 		const on = shown[i] && !(v && VARIANT_REPLACES.includes(spec.key))
 			&& !(spec.key === 'surfaces' && coverOn)
-			&& !(PAINTED_REPLACES.includes(spec.key) && paintedActive());
+			&& !(PAINTED_REPLACES.includes(spec.key) && paintedActive())
+			&& !(LINES_REPLACES.includes(spec.key) && linesActive());
 		L.root.visible = on;
 		if (L.collider) L.collider.collider.setEnabled(on);
 	});
@@ -1741,6 +1759,13 @@ async function setLayer(i, on) {
 				if (j >= 0 && shown[j]) await ensureLayer(LAYERS[j]);
 			}
 		}
+
+		if (LAYERS[i].key === 'lines' && !on) {
+			for (const key of LINES_REPLACES) {
+				const j = LAYERS.findIndex((spec) => spec.key === key);
+				if (j >= 0 && shown[j]) await ensureLayer(LAYERS[j]);
+			}
+		}
 		shown[i] = on;
 
 		if (seamCache.tile) {
@@ -1767,6 +1792,7 @@ function drawnTriangles() {
 		const L = chunk.layers[spec.key];
 		if (!L || !shown[i]) return;
 		if (v && VARIANT_REPLACES.includes(spec.key)) return;
+		if (LINES_REPLACES.includes(spec.key) && linesActive()) return;
 		n += L.triangles;
 	});
 	return n;
@@ -1789,6 +1815,10 @@ function renderLayers() {
 		if (PAINTED_REPLACES.includes(spec.key) && paintedActive()) {
 			return `${key} <span class="dim">${spec.key.padEnd(10)} `
 				+ `&mdash; cut into painted</span>`;
+		}
+		if (LINES_REPLACES.includes(spec.key) && linesActive()) {
+			return `${key} <span class="dim">${spec.key.padEnd(10)} `
+				+ `&mdash; replaced by lines</span>`;
 		}
 		const mark = shown[i]
 			? '<span class="on">&#9679; on </span>'
@@ -2108,7 +2138,10 @@ async function loadTraffic() {
 		PASS_DIALS = PASSING;
 		trafficPass = buildNpcPass(graph);
 
-		trafficHold = signals ? buildSignalHold(graph, signals) : null;
+		const linesMeta = chunk.meta.layers && chunk.meta.layers.lines;
+		trafficHold = signals ? buildSignalHold(graph, signals, {
+			setbackM: linesMeta ? linesMeta.stop_setback_m : undefined,
+		}) : null;
 		traffic = buildNpcTraffic(scene, graph, { pass: trafficPass, hold: trafficHold });
 		if (traffic) {
 			trafficReport = `${traffic.report} · ${trafficPass.report}`
@@ -2189,6 +2222,20 @@ window.look = {
 			orphans: info.orphan,
 			note: 'air is not a measurement on this layer: the cover triangles ARE '
 				+ 'terrain triangles, so there is nothing between them',
+		};
+	},
+
+	async lines(on) {
+		const i = LAYERS.findIndex((spec) => spec.key === 'lines');
+		const info = chunk && chunk.meta && chunk.meta.layers && chunk.meta.layers.lines;
+		if (i < 0 || !info) {
+			return { error: `this cut has no lines layer — run the level tools ${CHUNK}` };
+		}
+		if (on !== undefined) await setLayer(i, !!on);
+		return {
+			on: shown[i],
+			showing: shown[i] ? 'new lines, from the drawn road' : 'old paint, from the standard',
+			triangles: info.triangles, metres: info.metres, centre: info.centre,
 		};
 	},
 	shadows() {
@@ -3463,7 +3510,7 @@ function toggleNeon() {
 	}).catch((err) => {
 		neonOn = false;
 		console.warn('[neon] toggle failed:', err);
-		status('neon outlines failed');
+		status('neon outlines failed — see the console');
 	}).finally(() => { neonBusy = false; });
 }
 
@@ -3606,8 +3653,11 @@ function setHTML(el, html, name) {
 		for (const [k, n] of domWrites) {
 			if (n > DOM_WRITE_WARN && !domWarned.has(k)) {
 				domWarned.add(k);
-				console.warn(`[dom] ${k} rewrote ${n} times in a second `);
-				status(`${k} is rewriting ${n}x/s`);
+				console.warn(`[dom] ${k} rewrote ${n} times in a second `
+					+ `(budget ${DOM_WRITE_WARN}). An innerHTML write is a parse, a style `
+					+ `recalc and a layout -- this will stutter the world. Throttle it, or `
+					+ `round the value it prints so the unchanged-text guard can work.`);
+				status(`${k} is rewriting ${n}x/s — see the console`);
 			}
 		}
 		domWrites.clear();
@@ -5054,6 +5104,7 @@ async function boot() {
 		if (varying && VARIANT_REPLACES.includes(LAYERS[i].key)) continue;
 
 		if (PAINTED_REPLACES.includes(LAYERS[i].key) && paintedActive()) continue;
+		if (LINES_REPLACES.includes(LAYERS[i].key) && linesActive()) continue;
 		await ensureLayer(LAYERS[i]);
 	}
 	applyShown();
