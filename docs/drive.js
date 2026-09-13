@@ -13,6 +13,7 @@ import {
 	STEER_FEELS, setSteerFeel, getSteerFeel, setSteerCurve, getSteerCurve,
 	setSteerLock, getSteerLock,
 	POWER_LEVELS, setPowerLevel, getPowerLevel, setPower, getPower,
+	CAR_SIZES, CAR_SIZE_KEY, bootCarScale, UNSTICK_DEFAULT,
 } from './vehicle.js';
 import { JitterMeter } from './jitter.js';
 import {
@@ -93,6 +94,25 @@ let worldTones = 'bright';
 let categoryTones = true;
 
 let pavements = true;
+
+let beachSand = false;
+
+function applySand() {
+	const L = chunk.layers && chunk.layers.painted;
+	if (!L || !L.root) return 0;
+	let n = 0;
+	L.root.traverse((o) => {
+		if (!o.isMesh || !o.userData || o.userData.category !== 'sand') return;
+
+		const under = o.userData.under_colour;
+		const asSand = beachSand || !Array.isArray(under);
+		o.material.userData.albedo = declaredHex(asSand ? o.userData.colour : under);
+		o.material.userData.role = !asSand && o.userData.under_value === 'terrain'
+			? 'terrain' : undefined;
+		n++;
+	});
+	return n;
+}
 
 function applyPavements() {
 	const L = chunk.layers && chunk.layers.surfaces;
@@ -320,7 +340,7 @@ function applyWorldTones() {
 
 			const painted = spec.key === 'painted';
 
-			const lines = spec.key === 'lines';
+			const lines = spec.key === 'lines' || spec.key === 'rainbow' || spec.key === 'rail';
 			const toneKey = lines ? 'paint' : spec.key;
 			if (painted) {
 				if (P.ground === undefined) continue;
@@ -537,7 +557,7 @@ function applyTreeTint(spec) {
 	});
 }
 
-const NO_CAST_LAYERS = ['surfaces', 'paint', 'lines'];
+const NO_CAST_LAYERS = ['surfaces', 'paint', 'lines', 'rainbow', 'rail'];
 
 function dressOptions(key) {
 	return NO_CAST_LAYERS.includes(key) ? { cast: false, receive: true } : undefined;
@@ -646,6 +666,12 @@ const LAYERS = [
 
 	{ key: 'lines', drive: false, tone: 0xd8d8d0, bias: 'paint',
 		note: 'lane lines' },
+
+	{ key: 'rainbow', drive: false, tone: 0xd8d8d0, bias: 'paint',
+		note: 'rainbow crosswalks painted on the road by the level tools, drawn only' },
+
+	{ key: 'rail', drive: false, tone: 0x8a7f72, bias: 'paint',
+		note: 'railway track from the level tools, drawn only' },
 ];
 
 const shown = LAYERS.map(() => true);
@@ -917,6 +943,9 @@ let signalsOn = true;
 let treesOn = true;
 
 let treeDensity = 0.4;
+
+let lakePalms = false;
+const LAKE_PALM_M = 30;
 let treeCull = true;
 
 let treeError = '';
@@ -1514,7 +1543,7 @@ async function ensureGridMod() {
 let coverMod = null;
 let coverOn = false;
 let coverAttached = 0;
-let coverLoading = null;
+
 
 const COVER_FLAT = {
 
@@ -1650,6 +1679,9 @@ async function ensureLayer(spec) {
 	chunk.layers[spec.key] = { root, collider, triangles: info.triangles, spec };
 
 	if (spec.key === 'surfaces') { applyPavements(); applyCoverFlat(); }
+	if (spec.key === 'painted') applySand();
+
+	if ((spec.key === 'painted' || spec.key === 'surfaces') && water) water.dressCreeks(root);
 
 	if (lighting) lighting.dress(root, dressOptions(spec.key));
 	return chunk.layers[spec.key];
@@ -1746,41 +1778,7 @@ function tileRoadTriangles() {
 
 let busy = false;
 
-async function setLayer(i, on) {
-	if (busy || i < 0 || i >= LAYERS.length) return;
-	busy = true;
-	try {
-		if (on) await ensureLayer(LAYERS[i]);
 
-		if (LAYERS[i].key === 'painted' && !on) {
-			for (const key of PAINTED_REPLACES) {
-				const j = LAYERS.findIndex((spec) => spec.key === key);
-				if (j >= 0 && shown[j]) await ensureLayer(LAYERS[j]);
-			}
-		}
-
-		if (LAYERS[i].key === 'lines' && !on) {
-			for (const key of LINES_REPLACES) {
-				const j = LAYERS.findIndex((spec) => spec.key === key);
-				if (j >= 0 && shown[j]) await ensureLayer(LAYERS[j]);
-			}
-		}
-		shown[i] = on;
-
-		if (seamCache.tile) {
-			scene.remove(seamCache.tile.line);
-			delete seamCache.tile;
-		}
-		applyShown();
-		const L = chunk.layers[LAYERS[i].key];
-		status(L === null
-			? `${LAYERS[i].key}: this box has no ${LAYERS[i].key} layer — ${LAYERS[i].note}`
-			: `${LAYERS[i].key} ${on ? 'on' : 'off'} — ${drawnTriangles().toLocaleString()} `
-				+ `triangles in the section`);
-	} finally {
-		busy = false;
-	}
-}
 
 
 
@@ -1963,7 +1961,7 @@ async function loadGarageCars() {
 	try {
 		const { buildGarageCars } = await import(`./garagecars.js${MODULE_STAMP}`);
 		garageCars = await buildGarageCars(url(`${CHUNK}.garage`, 'json'),
-			{ fill: garageFill });
+			{ fill: garageFill, carScale: bootCarScale() });
 		if (garageCars && garageCars.footprints && garageCars.footprints.length) {
 			garageFootprints = garageCars.footprints;
 		}
@@ -1993,7 +1991,11 @@ async function loadTrees() {
 		if (typeof wanted === 'number' && wanted >= 0 && wanted <= 1) {
 			treeDensity = wanted;
 		}
-		forest = await buildTrees(url(`${CHUNK}.trees`, 'json'), { density: treeDensity });
+		const opts = { density: treeDensity };
+		const shore = lakePalms && waterMod && waterRings
+			? waterMod.nearShore(waterRings, LAKE_PALM_M) : null;
+		if (shore) opts.kindAt = (x, z, kind) => (shore.test(x, z) ? 'palm' : kind);
+		forest = await buildTrees(url(`${CHUNK}.trees`, 'json'), opts);
 		if (forest) {
 			forest.group.visible = treesOn;
 			scene.add(forest.group);
@@ -2085,14 +2087,7 @@ function attachLampField() {
 	if (traffic && traffic.mesh) grad(traffic.mesh);
 }
 
-function applyLampMode() {
-	if (lamps) {
-		lamps.mode = lampMode;
-		lamps.daylight = lampsByDay;
-	}
-	if (lampField && lampMode !== 'lit') lampField.gain = 0;
-	if (lampMode === 'lit') attachLampField();
-}
+
 
 let traffic = null;
 let trafficPass = null;
@@ -2137,7 +2132,8 @@ async function loadTraffic() {
 		trafficHold = signals ? buildSignalHold(graph, signals, {
 			setbackM: linesMeta ? linesMeta.stop_setback_m : undefined,
 		}) : null;
-		traffic = buildNpcTraffic(scene, graph, { pass: trafficPass, hold: trafficHold });
+		traffic = buildNpcTraffic(scene, graph,
+			{ pass: trafficPass, hold: trafficHold, carScale: bootCarScale() });
 		if (traffic) {
 			trafficReport = `${traffic.report} · ${trafficPass.report}`
 				+ (trafficHold ? ` · 🚦 ${trafficHold.report}` : ' · no signals in this cut');
@@ -2151,319 +2147,21 @@ async function loadTraffic() {
 	}
 }
 
-window.look = {
-
-	async cover(strength) {
-		if (!coverMod) return { error: 'cover module not attached' };
-		if (strength !== undefined && Number(strength) > 0 && !coverMod.haveCover()) {
-			if (!chunk.meta.cover) return { error: 'no cover texture built for this cut' };
-
-			if (!coverLoading) {
-				coverLoading = coverMod.loadCover(THREE, {
-					id: url(`${CHUNK}.cover`, 'png'),
-					far: url(`${CHUNK}.cover.far`, 'png'),
-				}, chunk.meta.cover).then((got) => {
-					coverMod.setAnisotropy(renderer.capabilities.getMaxAnisotropy());
-					applyWorldTones();
-					return got;
-				});
-			}
-			await coverLoading;
+let railTrains = null;
+async function loadRailTrains() {
+	railTrains = null;
+	if (!chunk || !chunk.meta || !chunk.meta.rail) return;
+	try {
+		const { buildRailTrains } = await import(`./railtrain.js${MODULE_STAMP}`);
+		railTrains = buildRailTrains(THREE, scene, await sidecarJson(`${CHUNK}.rail`));
+		if (railTrains) {
+			window.railProbe = () => railTrains && railTrains.probe();
+			;
 		}
-		if (strength !== undefined) {
-			coverMod.writeCover(Number(strength));
-			coverOn = Number(strength) > 0;
-			applyShown();
-		}
-		return Object.assign(coverMod.coverState(),
-			{ meshCoverVisible: !coverOn, materials: coverAttached });
-	},
-
-	flat(opts) {
-		if (opts) {
-			for (const k of ['lift', 'factor', 'units', 'depthWrite', 'renderOrder']) {
-				if (opts[k] !== undefined) COVER_FLAT[k] = opts[k];
-			}
-		}
-		const n = applyCoverFlat();
-		return Object.assign({}, COVER_FLAT, {
-			materials: n,
-			lift_real_m: +(COVER_FLAT.lift / 1.6).toFixed(4),
-			meshCoverVisible: !coverOn,
-			note: 'lift is DRAWN meters; -0.016 cancels surfaces.SURFACE_LIFT_M',
-		});
-	},
-
-	async painted(on) {
-		const i = LAYERS.findIndex((spec) => spec.key === 'painted');
-		const info = chunk && chunk.meta && chunk.meta.layers
-			&& chunk.meta.layers.painted;
-		if (i < 0 || !info) {
-			return { error: 'no painted ground here' };
-		}
-		if (on !== undefined) await setLayer(i, !!on);
-		return {
-			on: shown[i],
-			showing: shown[i] ? 'one mesh: the cover IS the terrain'
-				: 'two meshes: terrain + the cover laid on it',
-			triangles: info.triangles,
-			replaces: PAINTED_REPLACES.map((k) => {
-				const L = chunk.meta.layers[k];
-				return `${k} ${L ? L.triangles.toLocaleString() : '?'}`;
-			}).join(' + '),
-			cover_triangles: info.cover_triangles,
-			terrain_triangles: info.terrain_triangles,
-			orphans: info.orphan,
-			note: 'air is not a measurement on this layer: the cover triangles ARE '
-				+ 'terrain triangles, so there is nothing between them',
-		};
-	},
-
-	async lines(on) {
-		const i = LAYERS.findIndex((spec) => spec.key === 'lines');
-		const info = chunk && chunk.meta && chunk.meta.layers && chunk.meta.layers.lines;
-		if (i < 0 || !info) {
-			return { error: 'no lane lines here' };
-		}
-		if (on !== undefined) await setLayer(i, !!on);
-		return {
-			on: shown[i],
-			showing: shown[i] ? 'lane lines' : 'old paint',
-			triangles: info.triangles, metres: info.metres, centre: info.centre,
-		};
-	},
-	shadows() {
-		if (!chunk || !chunk.layers) return { error: 'no chunk' };
-		const out = {};
-		for (const spec of LAYERS) {
-			const L = chunk.layers[spec.key];
-			if (!L || !L.root) continue;
-			let meshes = 0, cast = 0, receive = 0;
-			L.root.traverse((o) => {
-				if (!o.isMesh) return;
-				meshes++;
-				if (o.castShadow) cast++;
-				if (o.receiveShadow) receive++;
-			});
-			out[spec.key] = { meshes, cast, receive };
-		}
-		out._noCast = NO_CAST_LAYERS.slice();
-		return out;
-	},
-
-	clouds() {
-		return lighting
-			? {
-				drawn: lighting.cloudsDrawn,
-				sway: lighting.cloudSway,
-				kind: lighting.cloudKind,
-				cover: lighting.clouds,
-				size: lighting.cloudSize,
-				thickness: lighting.cloudThickness,
-				droop: lighting.cloudDroop,
-				rimFade: lighting.cloudRimFade,
-				clump: lighting.cloudClump,
-				wind: lighting.windSpeed,
-
-				grey: lighting.cloudGrey,
-				greyNow: Math.round(lighting.cloudGreyNow * 1000) / 1000,
-				height: lighting.cloudHeight,
-				distGain: lighting.cloudDistGain,
-				crowd: lighting.cloudCrowd,
-				fogDistance: lighting.fogDistance,
-				fogRange: lighting.fogRange,
-			}
-			: null;
-	},
-
-	setCloud(name, value) {
-		if (!lighting) return null;
-		lighting[name] = value;
-		return lighting[name];
-	},
-
-	report() {
-		return {
-			style: lighting ? lighting.style : null,
-
-			shadowLevel: lighting ? lighting.shadowLevel : null,
-			renderScale: pixelScale,
-			cinematic: cinematicOn,
-			tint: buildingTintLevel,
-			shade: buildingShade,
-			varied: variedBuildings,
-			neon: neonOn,
-			neonGate: neonMinHeight,
-			neonStats: neonEdges ? neonEdges.stats : null,
-			windows: windowsOn,
-			windowsLit,
-			panes: windowStats
-				? { total: windowStats.windows, lit: windowStats.windowsLit || 0 }
-				: null,
-		};
-	},
-
-	clock(t, run) {
-		if (!lighting) return { error: 'no lighting rig' };
-		if (t !== undefined) lighting.timeOfDay = Number(t);
-
-		if (run !== undefined) lighting.running = !!run;
-		return { t: lighting.timeOfDay, clock: lighting.clockText(),
-			phase: lighting.phaseName, style: lighting.style,
-			running: lighting.running };
-	},
-
-	groups() {
-		const layer = chunk && chunk.layers && chunk.layers.buildings;
-		if (!layer || !layer.root) return { error: 'no buildings layer' };
-		let windows = 0, neon = 0, tris = 0;
-		for (const child of layer.root.children) {
-			if (child === windowGroup || (child.userData && child.userData.windows)) windows++;
-			if (neonEdges && child === neonEdges.group) neon++;
-		}
-
-		layer.root.traverse((o) => {
-			const g = o.isMesh && o.geometry;
-			if (g && g.index) tris += g.index.count / 3;
-			else if (g && g.attributes && g.attributes.position) tris += g.attributes.position.count / 3;
-		});
-		return { windowGroups: windows, neonGroups: neon,
-			childrenOfBuildingsRoot: layer.root.children.length,
-			trianglesUnderBuildings: Math.round(tris),
-			panesLastBuilt: windowStats ? windowStats.windows : null };
-	},
-
-	profile(on) {
-		profOn = on === undefined ? !profOn : !!on;
-		for (const k of PROF_KEYS) { profSum[k] = 0; profPeak[k] = 0; }
-		profFrames = 0;
-		profText = '';
-		return { profiling: profOn };
-	},
-
-	frames() {
-		return { profiling: profOn, window: profText || 'filling…',
-			stats: frameStats(), capBinds, physDt: +physDt.toFixed(5),
-			physHz: Math.round(1 / physDt), drain: physDrain };
-	},
-
-	golden(arm) {
-		if (!lighting) return { error: 'no lighting rig' };
-		if (arm !== undefined) lighting.goldenArm = arm;
-		return { goldenArm: lighting.goldenArm,
-			arms: lighting.goldenArms.map((a) => a.id) };
-	},
-
-	snapshot() {
-		const out = { style: lighting && lighting.style, tones: worldTones,
-			grade: worldGradeName, varied: variedBuildings, tint: buildingTintLevel,
-			neon: neonOn, windows: windowsOn, lit: windowsLit, categories: categoryTones };
-		if (lighting) {
-			const s = lighting.look;
-			out.t = +lighting.timeOfDay.toFixed(4);
-			out.phase = lighting.phaseName;
-			out.goldenArm = lighting.goldenArm;
-			out.running = lighting.running;
-			if (s && s.look) {
-				const L = s.look;
-				out.sky = { zen: L.skyZenith, hor: L.skyHorizon, band: L.skyBand,
-					amt: +L.skyBandAmt.toFixed(3), sun: +L.sunIntensity.toFixed(3),
-					hemi: +L.hemiIntensity.toFixed(3), exp: +L.exposure.toFixed(3),
-					fogN: Math.round(L.fogNear), fogF: Math.round(L.fogFar) };
-				out.sunUp = +s.sunUp.toFixed(4);
-			}
-
-			if (lighting.rendererState) out.renderer = lighting.rendererState();
-		}
-
-		out.materials = {};
-		if (chunk && chunk.layers) {
-			for (const spec of LAYERS) {
-				const L = chunk.layers[spec.key];
-				if (!L || !L.root) continue;
-				let hex = null;
-				L.root.traverse((o) => {
-					if (hex === null && o.isMesh && o.material && o.material.color) {
-						hex = '#' + o.material.color.getHexString();
-					}
-				});
-				if (hex) out.materials[spec.key] = hex;
-			}
-		}
-		return out;
-	},
-
-	mode(which) {
-		if (!lighting) return { error: 'no lighting rig' };
-		if (which !== undefined) {
-			const i = typeof which === 'number'
-				? which : SKY_MODES.findIndex((m) => m.id === which || m.label === which);
-			if (i < 0 || !SKY_MODES[i]) {
-				return { error: `no such mode ${which}`,
-					modes: SKY_MODES.map((m) => m.id) };
-			}
-			setSkyMode(i, false);
-		}
-		return { mode: SKY_MODES[skyMode].id, t: lighting.timeOfDay,
-			clock: lighting.clockText(), phase: lighting.phaseName,
-			modes: SKY_MODES.map((m) => m.id) };
-	},
-
-	ground(name) {
-		if (!lighting) return { error: 'no lighting rig' };
-		if (name === undefined) {
-			return { current: lighting.goldenGround, options: lighting.goldenGrounds };
-		}
-		if (!lighting.goldenGrounds.includes(name)) {
-			return { error: `no such ground ${name}`, options: lighting.goldenGrounds };
-		}
-		lighting.goldenGround = name;
-		setSkyMode(skyMode, false);
-		return { current: lighting.goldenGround, mode: SKY_MODES[skyMode].id };
-	},
-
-	lamps(mode, byDay) {
-		if (byDay !== undefined) {
-			lampsByDay = !!byDay;
-			applyLampMode();
-		}
-		if (mode !== undefined) {
-			if (!['off', 'orb', 'lit'].includes(mode)) {
-				return { error: `no such mode ${mode}`, options: ['off', 'orb', 'lit'] };
-			}
-			lampMode = mode;
-			applyLampMode();
-		}
-		return {
-			mode: lampMode,
-			byDay: lampsByDay,
-			drawn: !!(lamps && lamps.group.visible),
-			sky: SKY_MODES[skyMode].id,
-			count: lamps ? lamps.lamps.length : 0,
-			byType: lamps ? lamps.byType : null,
-			gain: lampGain,
-			night: lighting ? +lighting.nightLevel.toFixed(3) : null,
-			field: lampField ? lampField.stats : null,
-			error: lampError || undefined,
-		};
-	},
-
-	async neon(on) { neonOn = !!on; await applyNeon(neonOn); return this.report(); },
-
-	async gate(m) { neonMinHeight = Number(m); if (neonOn) await applyNeon(true); return this.report(); },
-
-	async litWindows(on) { windowsLit = !!on; await applyWindows(windowsOn); return this.report(); },
-
-	async tint(level) {
-		if (!TINT_LEVELS[level]) return { error: `no such level ${level}` };
-		buildingTintLevel = level;
-		buildingsTinted = false;
-		if (!variedBuildings) variedBuildings = true;
-		await applyBuildingTint(true);
-		applyWorldTones();
-		return this.report();
-	},
-};
+	} catch (err) {
+		console.warn('[rail] trains not built:', err && err.message ? err.message : err);
+	}
+}
 
 window.npc = {
 
@@ -3482,7 +3180,7 @@ let beamsOn = true;
 let spoilerOn = ['1', 'on', 'true', 'yes']
 	.includes((new URLSearchParams(location.search).get('spoiler') || '').toLowerCase());
 
-let cinematicOn = false;
+
 
 
 function toggleNeon() {
@@ -4895,6 +4593,16 @@ function frame(now) {
 	}
 	pAdd('traffic', mark);
 
+	if (railTrains) {
+		try {
+			railTrains.update(dt);
+		} catch (err) {
+			console.error('[rail] tick threw, removing the trains:', err);
+			try { scene.remove(railTrains.group); } catch (e2) {   }
+			railTrains = null;
+		}
+	}
+
 	jitterAcc += dt;
 	if (jitterAcc > 0.25) { jitterAcc = 0; jitterText = meter.report(car, 1 / FIXED_DT); }
 
@@ -5044,6 +4752,15 @@ async function buildMenu() {
 		get: () => lookMode,
 		set: (v) => { lookMode = v; lookIdle = 0; },
 	});
+	p.select({
+		label: 'car size',
+		options: CAR_SIZES.map((o) => ({ value: String(o.value), label: o.label })),
+		get: () => String(car ? car.scale : bootCarScale()),
+		set: (v) => {
+			try { localStorage.setItem(CAR_SIZE_KEY, v); } catch (e) {   }
+			location.reload();
+		},
+	});
 
 	p.group('camera');
 	p.select({
@@ -5134,6 +4851,7 @@ async function boot() {
 
 	await loadLamps();
 	await loadTraffic();
+	await loadRailTrains();
 
 	car = createVehicle(world, scene, { handling: handlingName });
 
