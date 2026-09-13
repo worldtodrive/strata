@@ -4,9 +4,9 @@ const MOON_PRESET_FLOOR = 0.90;
 
 import * as THREE from 'three';
 
-const SKY = import(`./sky.js${new URL(import.meta.url).search}`);
+const SKY = import('./sky.js?v=fe60bf82c4');
 
-const CLOUDMESH = import(`./cloudmesh.js${new URL(import.meta.url).search}`);
+const CLOUDMESH = import('./cloudmesh.js?v=fe60bf82c4');
 
 const DOME_R = 9000;
 

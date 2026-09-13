@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-import { buildSpawnField, mulberry32, pickExit, sampleLane } from './npcgraph.js';
+import { buildSpawnField, mulberry32, pickExit, sampleLane } from './npcgraph.js?v=fe60bf82c4';
 
 export const TRAFFIC = {
 
