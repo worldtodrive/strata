@@ -2,7 +2,7 @@
 
 import * as THREE from 'three';
 
-const CONTROL = import(`./signalcontrol.js${new URL(import.meta.url).search}`);
+const CONTROL = import('./signalcontrol.js?v=fe60bf82c4');
 
 const FAN_PITCH = 1.45;
 

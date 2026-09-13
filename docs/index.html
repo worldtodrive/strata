@@ -678,6 +678,7 @@
 				<p class="dim">Rendered with <b>three.js</b> r160 (MIT) and
 					<b>Rapier</b> 0.19.3 (Apache-2.0). Full license texts ship in
 					vendor/ alongside the libraries.</p>
+				<p class="dim">build 2026-09-13 &middot; fe60bf82c4</p>
 			</section>
 
 		</div>
@@ -767,12 +768,43 @@
 	}());
 </script>
 <script type="module">
-	const stamp = Date.now();
-	import(`./drive.js?v=${stamp}`).catch((err) => {
-		document.getElementById('hud').textContent =
-			`failed to load drive.js: ${err && err.message ? err.message : err}`;
+	const BUILD = 'fe60bf82c4';
+	const MODULE_ERR = /dynamically imported module|does not provide an export named|importing a module script failed|import not found|binding name .* is not found/i;
+	let reloading = false;
+	function updateButton() {
+		if (document.getElementById('update-bar')) return;
+		const b = document.createElement('button');
+		b.id = 'update-bar';
+		b.textContent = 'A new version is available. Reload';
+		b.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:100000;'
+			+ 'padding:8px 14px;border:0;border-radius:6px;background:#222;color:#fff;font:14px sans-serif;cursor:pointer';
+		b.addEventListener('click', () => location.reload());
+		document.body.appendChild(b);
+	}
+	function recover(err) {
 		console.error(err);
-	});
+		if (reloading) return;
+		const booted = !!(window.__loading && window.__loading.state().done);
+		if (booted) { updateButton(); return; }
+		let last = BUILD;
+		try { last = sessionStorage.getItem('strata.reload'); } catch (e) { last = BUILD; }
+		if (last !== BUILD) {
+			try {
+				sessionStorage.setItem('strata.reload', BUILD);
+				reloading = true;
+				location.reload();
+				return;
+			} catch (e) {   }
+		}
+		const msg = 'could not load, please reload the page';
+		if (window.__loading) window.__loading.fail(msg);
+		const hud = document.getElementById('hud');
+		if (hud) hud.textContent = msg;
+	}
+	const isModuleErr = (e) => MODULE_ERR.test(String(e && e.message ? e.message : e));
+	window.addEventListener('unhandledrejection', (e) => { if (isModuleErr(e.reason)) recover(e.reason); });
+	window.addEventListener('error', (e) => { if (isModuleErr(e.error || e.message)) recover(e.error || e.message); });
+	import('./drive.js?v=fe60bf82c4').catch(recover);
 </script>
 </body>
 </html>
