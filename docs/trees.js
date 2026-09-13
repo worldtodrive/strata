@@ -312,7 +312,9 @@ export async function buildTrees(url, opts = {}) {
 	const cells = new Map();
 	for (let i = 0; i < rows.length; i++) {
 		const r = rows[i];
-		const kind = (kinds && kinds[r[5]]) || ARCH_KIND[names[r[3]]] || 'oak';
+		const planted = (kinds && kinds[r[5]]) || ARCH_KIND[names[r[3]]] || 'oak';
+
+		const kind = opts.kindAt ? opts.kindAt(r[0], r[2], planted) : planted;
 		familyOf(kind);
 		const key = `${Math.floor(r[0] / CELL_M)},${Math.floor(r[2] / CELL_M)}`;
 		let c = cells.get(key);
@@ -353,7 +355,7 @@ export async function buildTrees(url, opts = {}) {
 				const h = r[4] * (H_JITTER_LO + hash01(seed * 9781) * H_JITTER_SPAN);
 				pos.set(r[0], r[1], r[2]);
 
-				const bearing = r[6];
+				const bearing = kind === 'palm' ? undefined : r[6];
 				if (bearing === undefined) {
 					q.setFromAxisAngle(up, hash01(seed * 40503) * Math.PI * 2);
 				} else {

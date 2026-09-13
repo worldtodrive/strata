@@ -74,6 +74,12 @@ const BRAKE_COLOUR = new THREE.Color(1.0, 0.07, 0.03);
 const CAR_W = 1.02;
 const CAR_L = 2.24;
 
+const PLAYER_LENGTH_AT_1 = 4.2;
+export function npcSizeFor(carScale) {
+	const s = Number.isFinite(carScale) && carScale > 0 ? carScale : 0.72;
+	return (PLAYER_LENGTH_AT_1 * s) / CAR_L;
+}
+
 export function bodyGeometry() {
 	const parts = [];
 	const body = new THREE.BoxGeometry(CAR_W, 0.36, CAR_L);
@@ -182,6 +188,7 @@ export function buildNpcTraffic(scene, graph, opts = {}) {
 	const seed = opts.seed !== undefined ? opts.seed : 0x5f3a;
 	const hold = opts.hold || null;
 	const pass = opts.pass || null;
+	const NPC_SCALE = npcSizeFor(opts.carScale);
 
 	const bodyMat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.12 });
 	const mesh = new THREE.InstancedMesh(bodyGeometry(), bodyMat, MAX_NPCS);
@@ -255,7 +262,8 @@ export function buildNpcTraffic(scene, graph, opts = {}) {
 	const m4 = new THREE.Matrix4();
 	const q = new THREE.Quaternion();
 	const pos = new THREE.Vector3();
-	const one = new THREE.Vector3(1, 1, 1);
+
+	const one = new THREE.Vector3(NPC_SCALE, NPC_SCALE, NPC_SCALE);
 	const zero = new THREE.Vector3(0, 0, 0);
 	const UP = new THREE.Vector3(0, 1, 0);
 	const tailC = new THREE.Color();
@@ -468,9 +476,9 @@ export function buildNpcTraffic(scene, graph, opts = {}) {
 
 			if (headFade > 0) {
 				const o = litHead * 3;
-				headPos[o] = pos.x + sinH * (CAR_L / 2);
-				headPos[o + 1] = p.y + 0.30;
-				headPos[o + 2] = pos.z + cosH * (CAR_L / 2);
+				headPos[o] = pos.x + sinH * (CAR_L / 2) * NPC_SCALE;
+				headPos[o + 1] = p.y + 0.30 * NPC_SCALE;
+				headPos[o + 2] = pos.z + cosH * (CAR_L / 2) * NPC_SCALE;
 				headCol[o] = HEAD_COLOUR.r * headFade;
 				headCol[o + 1] = HEAD_COLOUR.g * headFade;
 				headCol[o + 2] = HEAD_COLOUR.b * headFade;
@@ -478,9 +486,9 @@ export function buildNpcTraffic(scene, graph, opts = {}) {
 			}
 			if (tailFade > 0) {
 				const o = litTail * 3;
-				tailPos[o] = pos.x - sinH * (CAR_L / 2);
-				tailPos[o + 1] = p.y + 0.34;
-				tailPos[o + 2] = pos.z - cosH * (CAR_L / 2);
+				tailPos[o] = pos.x - sinH * (CAR_L / 2) * NPC_SCALE;
+				tailPos[o + 1] = p.y + 0.34 * NPC_SCALE;
+				tailPos[o + 2] = pos.z - cosH * (CAR_L / 2) * NPC_SCALE;
 
 				tailCol[o] = tailC.r * tailFade;
 				tailCol[o + 1] = tailC.g * tailFade;

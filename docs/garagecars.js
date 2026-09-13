@@ -1,7 +1,7 @@
 
 
 import * as THREE from './vendor/three.module.js';
-import { bodyGeometry, carPaint } from './npctraffic.js';
+import { bodyGeometry, carPaint, npcSizeFor } from './npctraffic.js';
 
 const FILL = 0.5;
 
@@ -56,7 +56,9 @@ export async function buildGarageCars(src, opts = {}) {
 	const q = new THREE.Quaternion();
 	const up = new THREE.Vector3(0, 1, 0);
 	const pos = new THREE.Vector3();
-	const one = new THREE.Vector3(1, 1, 1);
+
+	const k = npcSizeFor(opts.carScale);
+	const one = new THREE.Vector3(k, k, k);
 	const paint = new THREE.Color();
 	const paintRand = mulberry32(0x85ebca6b);
 	chosen.forEach((bay, i) => {

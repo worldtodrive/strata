@@ -27,7 +27,14 @@ const STEER_SIGN = 1.0;
 
 const DRIVE_SIGN = -1.0;
 
-export const CAR_SCALE = 0.72;
+export const CAR_SCALE = 0.5;
+
+export const CAR_SIZES = [
+	{ value: 0.4, label: 'small (0.4)' },
+	{ value: 0.5, label: 'standard (0.5)' },
+	{ value: 0.6, label: 'large (0.6)' },
+	{ value: 0.72, label: 'classic (0.72)' },
+];
 
 export const STEER_SCALES_WITH_CAR = false;
 
@@ -301,6 +308,10 @@ const UPRIGHT_FROM = 0.52;
 
 const ANTI_ROLL_DAMP = 0.45;
 
+export const UNSTICK_DEFAULT = { push: 0.35, lift: 1.0, wall: 1, maxMs: 2.5, rollDeg: 6, after: 0.25 };
+
+
+
 function moveToward(a, b, delta) {
 	if (Math.abs(b - a) <= delta) return b;
 	return a + Math.sign(b - a) * delta;
@@ -452,6 +463,11 @@ export class Vehicle {
 		this._hb = 0.0;
 
 		this.kerbLift = 1.8;
+
+		this.unstick = null;
+		this._stuckT = 0.0;
+		this.unstickSteps = 0;
+		this._right = new THREE.Vector3();
 		this.handlingName = HANDLING_DEFAULT;
 		this.handling = HANDLING[HANDLING_DEFAULT];
 		this.setHandling(HANDLING_DEFAULT);
@@ -609,6 +625,38 @@ export class Vehicle {
 		if (m.lo === m.hi) return m.lo;
 		const t = clamp(Math.abs(speed) / Math.max(m.ref, 1e-6), 0.0, 1.0);
 		return m.lo + (m.hi - m.lo) * t;
+	}
+
+	_unstickStep(dt) {
+		const u = this.unstick;
+		const lv = this.chassis.linvel();
+		const planar = Math.hypot(lv.x, lv.z);
+
+		const slow = clamp((u.maxMs - planar) / (u.maxMs * 0.5), 0.0, 1.0);
+		const steer = this._steerInput;
+		let compromised = false;
+		if (slow > 0.0 && Math.abs(steer) > 0.15) {
+			for (let i = 0; i < this.wheels.length && !compromised; i++) {
+				if (!this.controller.wheelIsInContact(i)) { compromised = true; break; }
+				const n = this.controller.wheelContactNormal(i);
+				if (n && n.y < 0.7) compromised = true;
+			}
+			this._right.crossVectors(this._fwd, this._up);
+			const rollDeg = Math.asin(clamp(this._right.y, -1.0, 1.0)) * 180 / Math.PI;
+			if (Math.abs(rollDeg) > u.rollDeg) compromised = true;
+		}
+		if (!compromised) { this._stuckT = 0.0; return; }
+		this._stuckT += dt;
+		const ramp = clamp((this._stuckT - u.after) / 0.25, 0.0, 1.0);
+		if (ramp <= 0.0) return;
+		this.unstickSteps++;
+
+		const hx = -this._right.x, hz = -this._right.z;
+		const hl = Math.hypot(hx, hz) || 1.0;
+		const g = 9.81 * MASS * dt * slow * ramp;
+		const k = u.push * g * steer / hl;
+		this.chassis.applyImpulse(
+			{ x: hx * k, y: u.lift * g * Math.abs(steer), z: hz * k }, true);
 	}
 
 	get speedMph() { return this.speedMs * MPH; }
@@ -786,6 +834,8 @@ export class Vehicle {
 			}
 		}
 
+		if (this.unstick && !this.bare) this._unstickStep(dt);
+
 		const hbWant = typeof input.handbrake === 'number'
 			? clamp(input.handbrake, 0.0, 1.0) : (input.handbrake ? 1.0 : 0.0);
 		this._hb = moveToward(
@@ -867,6 +917,21 @@ export class Vehicle {
 		}
 
 		this.controller.updateVehicle(dt, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC);
+		if (this.unstick && this.unstick.wall && !this.bare) this._cancelWallSprings(dt);
+	}
+
+	_cancelWallSprings(dt) {
+		for (let i = 0; i < this.wheels.length; i++) {
+			if (!this.controller.wheelIsInContact(i)) continue;
+			const n = this.controller.wheelContactNormal(i);
+			if (!n || n.y >= 0.7) continue;
+			const f = this.controller.wheelSuspensionForce(i) || 0;
+			if (f <= 0) continue;
+			const p = this.controller.wheelContactPoint(i);
+			const k = -f * dt;
+			this.chassis.applyImpulseAtPoint({ x: n.x * k, y: n.y * k, z: n.z * k }, p, true);
+			this.wallCancels = (this.wallCancels || 0) + 1;
+		}
 	}
 
 	syncMeshes(alpha) {
@@ -992,10 +1057,21 @@ export function createPhysicsWorld(RAPIER, gravityY = GRAVITY_Y) {
 	return world;
 }
 
+export const CAR_SIZE_KEY = 'strata.carscale';
+
 function scaleFromUrl(dflt) {
 	if (typeof location === 'undefined') return dflt;
-	const v = Number(new URLSearchParams(location.search).get('carscale'));
-	return (Number.isFinite(v) && v > 0.05 && v <= 4) ? v : dflt;
+	const ok = (v) => Number.isFinite(v) && v > 0.05 && v <= 4;
+	try {
+		const s = typeof localStorage !== 'undefined' ? localStorage.getItem(CAR_SIZE_KEY) : null;
+		const sv = s === null ? NaN : Number(s);
+		if (ok(sv)) return sv;
+	} catch (e) {   }
+	return dflt;
+}
+
+export function bootCarScale() {
+	return scaleFromUrl(undefined) || CAR_SCALE;
 }
 
 export function createVehicle(world, scene, opts = {}) {
@@ -1005,6 +1081,7 @@ export function createVehicle(world, scene, opts = {}) {
 	v.gripMode = GRIP_MODES[o.gripStep];
 	v.throttleRate = THROTTLE_RATES[o.throttleStep].rate;
 	v.antiRollOn = o.antiRoll;
+	v.unstick = { ...UNSTICK_DEFAULT };
 	if (v.chassisCollider) {
 		v.chassisCollider.setCollisionGroups(
 			o.chassisHitsGround ? ALL_GROUPS : CHASSIS_GROUPS);
