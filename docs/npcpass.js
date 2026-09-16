@@ -1,6 +1,6 @@
 
 
-import { sampleLane } from './npcgraph.js?v=482ef01b2c';
+import { sampleLane } from './npcgraph.js?v=8bc150354e';
 
 export const PASSING = {
 	on: true,

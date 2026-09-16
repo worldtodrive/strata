@@ -1,8 +1,8 @@
 
 
 import * as THREE from 'three';
-import { ringsFrom, landMask, buildGlobe, rng } from './strata-globe.js?v=482ef01b2c';
-import { seedCars, stepCars, CAR_LENGTH } from './titletraffic.js?v=482ef01b2c';
+import { ringsFrom, landMask, buildGlobe, rng } from './strata-globe.js?v=8bc150354e';
+import { seedCars, stepCars, CAR_LENGTH } from './titletraffic.js?v=8bc150354e';
 
 const WORDS = {
 	mark: 'STRATA',
@@ -521,7 +521,7 @@ function buildScene(stage, word, col) {
 
 	let driver = null;
 	let driverModule = null;
-	const loadDriver = () => (driverModule ||= import('./ringdrive.js?v=482ef01b2c'));
+	const loadDriver = () => (driverModule ||= import('./ringdrive.js?v=8bc150354e'));
 	const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1200));
 	idle(() => { if (!disposed) loadDriver().catch(() => { driverModule = null; }); }, { timeout: 3000 });
 

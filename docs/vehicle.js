@@ -535,7 +535,7 @@ export class Vehicle {
 		});
 
 		this.carMesh = null;
-		import('./carmesh.js?v=482ef01b2c').then(({ createCarMesh }) => {
+		import('./carmesh.js?v=8bc150354e').then(({ createCarMesh }) => {
 			if (!this.chassis) return;
 			this.carMesh = createCarMesh(scene);
 			this.carMesh.fit(this.half, this.wheels, this._restSusp || 0);

@@ -1,7 +1,7 @@
 const LEVEL_NAME = (typeof window !== 'undefined' && window.__levelName) || "Strata 01";
 
 import * as THREE from 'three';
-import { newGLTFLoader } from './glbload.js?v=482ef01b2c';
+import { newGLTFLoader } from './glbload.js?v=8bc150354e';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
@@ -14,8 +14,8 @@ import {
 	setSteerLock, getSteerLock,
 	POWER_LEVELS, setPowerLevel, getPowerLevel, setPower, getPower,
 	CAR_SIZES, CAR_SIZE_KEY, bootCarScale, UNSTICK_DEFAULT,
-} from './vehicle.js?v=482ef01b2c';
-import { JitterMeter } from './jitter.js?v=482ef01b2c';
+} from './vehicle.js?v=8bc150354e';
+import { JitterMeter } from './jitter.js?v=8bc150354e';
 import {
 	CAMERAS, CAM_ZOOM_STEPS, applyCamera, setLagMode,
 	setViewAngles, setFovTrim, currentFov, VIEW_PITCH_LIMIT, setFrameBelow,
@@ -32,15 +32,15 @@ import {
 	setRigSwing, getRigSwing,
 	setFitCar, getFitCar,
 	setTiltStops,
-} from './chasecam.js?v=482ef01b2c';
+} from './chasecam.js?v=8bc150354e';
 import { WORLD_TONES, TONE_CLASSES, toneHex, gradeTone, GRADES, DEFAULT_GRADE,
-	gradeWorld, mixTone } from './tones.js?v=482ef01b2c';
+	gradeWorld, mixTone } from './tones.js?v=8bc150354e';
 
-import { TINT_LEVELS, SHADE_LEVELS } from './buildingtint.js?v=482ef01b2c';
+import { TINT_LEVELS, SHADE_LEVELS } from './buildingtint.js?v=8bc150354e';
 
-import { WINDOW_SIZES } from './windows.js?v=482ef01b2c';
+import { WINDOW_SIZES } from './windows.js?v=8bc150354e';
 
-import { DEFAULT_CAR, CAR_LOOK } from './carmesh.js?v=482ef01b2c';
+import { DEFAULT_CAR, CAR_LOOK } from './carmesh.js?v=8bc150354e';
 
 const CHUNK = window.__level;
 
@@ -170,7 +170,7 @@ async function applyWindows(want) {
 	if (!layer || !layer.root) return null;
 	if (want && !winMod) {
 		try {
-			winMod = await import('./windows.js?v=482ef01b2c');
+			winMod = await import('./windows.js?v=8bc150354e');
 		} catch (err) {
 			console.warn('[windows] unavailable:', err);
 			return null;
@@ -207,7 +207,7 @@ async function applyNeon(want) {
 	if (!layer || !layer.root) return null;
 	if (want && !neonMod) {
 		try {
-			neonMod = await import('./neonedges.js?v=482ef01b2c');
+			neonMod = await import('./neonedges.js?v=8bc150354e');
 		} catch (err) {
 			console.warn('[neon] unavailable:', err);
 			return null;
@@ -231,7 +231,7 @@ async function applyBuildingTint(want) {
 	if (!layer || !layer.root) return;
 	if (want && !tintMod) {
 		try {
-			tintMod = await import('./buildingtint.js?v=482ef01b2c');
+			tintMod = await import('./buildingtint.js?v=8bc150354e');
 		} catch (err) {
 			console.warn('[buildings] tint unavailable:', err);
 			return;
@@ -1536,7 +1536,7 @@ let gridAttached = 0;
 
 async function ensureGridMod() {
 	if (!gridMod) {
-		gridMod = await import('./groundgrid.js?v=482ef01b2c');
+		gridMod = await import('./groundgrid.js?v=8bc150354e');
 	}
 	return gridMod;
 }
@@ -1576,7 +1576,7 @@ function applyCoverFlat() {
 
 async function ensureCoverMod() {
 	if (!coverMod) {
-		coverMod = await import('./covercoat.js?v=482ef01b2c');
+		coverMod = await import('./covercoat.js?v=8bc150354e');
 	}
 	return coverMod;
 }
@@ -1923,7 +1923,7 @@ async function loadSignals() {
 
 	if (!chunk || !chunk.meta || !chunk.meta.signals) return;
 	try {
-		const { buildSignals } = await import('./signals.js?v=482ef01b2c');
+		const { buildSignals } = await import('./signals.js?v=8bc150354e');
 		const upstream = new URLSearchParams("").get('signals') === 'upstream';
 		signals = await buildSignals(url(`${CHUNK}.signals`, 'json'), { upstream });
 		if (signals) {
@@ -1960,7 +1960,7 @@ async function loadGarageCars() {
 
 	if (!chunk || !chunk.meta || !chunk.meta.bays) return;
 	try {
-		const { buildGarageCars } = await import('./garagecars.js?v=482ef01b2c');
+		const { buildGarageCars } = await import('./garagecars.js?v=8bc150354e');
 		garageCars = await buildGarageCars(url(`${CHUNK}.garage`, 'json'),
 			{ fill: garageFill, carScale: bootCarScale() });
 		if (garageCars && garageCars.footprints && garageCars.footprints.length) {
@@ -1986,7 +1986,7 @@ async function loadTrees() {
 
 	if (!chunk || !chunk.meta || !chunk.meta.trees) return;
 	try {
-		const { buildTrees } = await import('./trees.js?v=482ef01b2c');
+		const { buildTrees } = await import('./trees.js?v=8bc150354e');
 
 		const wanted = chunk.meta.trees && chunk.meta.trees.density;
 		if (typeof wanted === 'number' && wanted >= 0 && wanted <= 1) {
@@ -2030,8 +2030,8 @@ async function loadLamps() {
 	if (!chunk || !chunk.meta || !chunk.meta.lamps) return;
 	try {
 		const [{ buildLamps }, field] = await Promise.all([
-			import('./lamps.js?v=482ef01b2c'),
-			import('./lampfield.js?v=482ef01b2c'),
+			import('./lamps.js?v=8bc150354e'),
+			import('./lampfield.js?v=8bc150354e'),
 		]);
 		const { buildLampField, FIELD_GAIN } = field;
 		lampGain = FIELD_GAIN;
@@ -2113,10 +2113,10 @@ async function loadTraffic() {
 	try {
 		const [{ buildLaneGraph, sampleLane }, { buildNpcTraffic, TRAFFIC },
 			{ buildNpcPass, PASSING }, { buildSignalHold }] = await Promise.all([
-			import('./npcgraph.js?v=482ef01b2c'),
-			import('./npctraffic.js?v=482ef01b2c'),
-			import('./npcpass.js?v=482ef01b2c'),
-			import('./npchold.js?v=482ef01b2c'),
+			import('./npcgraph.js?v=8bc150354e'),
+			import('./npctraffic.js?v=8bc150354e'),
+			import('./npcpass.js?v=8bc150354e'),
+			import('./npchold.js?v=8bc150354e'),
 		]);
 
 		const graph = buildLaneGraph(await sidecarJson(`${CHUNK}.lanes`));
@@ -2153,7 +2153,7 @@ async function loadRailTrains() {
 	railTrains = null;
 	if (!chunk || !chunk.meta || !chunk.meta.rail) return;
 	try {
-		const { buildRailTrains } = await import('./railtrain.js?v=482ef01b2c');
+		const { buildRailTrains } = await import('./railtrain.js?v=8bc150354e');
 		railTrains = buildRailTrains(THREE, scene, await sidecarJson(`${CHUNK}.rail`));
 		if (railTrains) {
 			window.railProbe = () => railTrains && railTrains.probe();
@@ -2169,7 +2169,7 @@ async function loadSigns() {
 	signs = null;
 	if (!chunk || !chunk.meta || !chunk.meta.signs) return;
 	try {
-		const { buildSigns } = await import('./signs.js?v=482ef01b2c');
+		const { buildSigns } = await import('./signs.js?v=8bc150354e');
 		signs = await buildSigns(url(`${CHUNK}.signs`, 'json'), {
 			registerPaint: (mat) => (biasReg ? biasReg.register(mat, 'paint') : mat),
 		});
@@ -2479,7 +2479,7 @@ function applyTouch() {
 
 async function ensureTouch() {
 	if (touchCtl) return touchCtl;
-	const { createTouchControls } = await import('./touch.js?v=482ef01b2c');
+	const { createTouchControls } = await import('./touch.js?v=8bc150354e');
 	touchCtl = createTouchControls({
 		root: document.getElementById('touch'),
 
@@ -3925,7 +3925,7 @@ async function ensureGps() {
 	gpsLoading = true;
 	try {
 
-		const M = await import('./minimap.js?v=482ef01b2c');
+		const M = await import('./minimap.js?v=8bc150354e');
 		const { lanes, names: gpsNames } = await ensureGpsData();
 		gps = M.createMinimap({
 			lanes,
@@ -4660,7 +4660,7 @@ let menuPanels = [];
 
 async function buildMenu() {
 	if (!window.driveMenu) return;
-	const { panel } = await import('./menuui.js?v=482ef01b2c');
+	const { panel } = await import('./menuui.js?v=8bc150354e');
 	menuPanels = [];
 	const refreshAll = () => { for (const p of menuPanels) p.refresh(); };
 	const mount = window.driveMenu.mount('settings');
@@ -4824,7 +4824,7 @@ async function boot() {
 	setLagMode(true);
 
 	try {
-		biasMod = await import('./depthbias.js?v=482ef01b2c');
+		biasMod = await import('./depthbias.js?v=8bc150354e');
 		biasReg = new biasMod.BiasRegistry(biasMod.resolveBiasArm());
 		;
 	} catch (err) {
@@ -4839,7 +4839,7 @@ async function boot() {
 	if (gpsOn) ensureGps();
 
 	try {
-		waterMod = await import('./water.js?v=482ef01b2c');
+		waterMod = await import('./water.js?v=8bc150354e');
 		waterRings = await waterMod.loadWaterRings(
 			chunk.meta, url(`${CHUNK}.water`, 'json'));
 		if (waterRings) {
@@ -4861,7 +4861,7 @@ async function boot() {
 	applyShown();
 
 	try {
-		if (!waterMod) waterMod = await import('./water.js?v=482ef01b2c');
+		if (!waterMod) waterMod = await import('./water.js?v=8bc150354e');
 
 		const wy = chunk.meta && chunk.meta.water && chunk.meta.water.y;
 		waterNearGround = Number.isFinite(wy) && chunk.spawn
@@ -4906,7 +4906,7 @@ async function boot() {
 	applyWorldTones();
 
 	try {
-		const { createLighting } = await import('./lighting.js?v=482ef01b2c');
+		const { createLighting } = await import('./lighting.js?v=8bc150354e');
 		lighting = await createLighting(scene, renderer, { timeOfDay: TIME_AT_BOOT });
 		dressScene();
 
@@ -4958,7 +4958,7 @@ async function boot() {
 	}
 
 	try {
-		padMod = await import('./gamepad.js?v=482ef01b2c');
+		padMod = await import('./gamepad.js?v=8bc150354e');
 		if (Number.isFinite(padMod.CAM_ZOOM_RATE)) padZoomRate = padMod.CAM_ZOOM_RATE;
 		if (Number.isFinite(padMod.BRAKE_EXP)) padBrakeExp = padMod.BRAKE_EXP;
 		if (Number.isFinite(padMod.TRIGGER_TOP_LIFT)) padTopLift = padMod.TRIGGER_TOP_LIFT;

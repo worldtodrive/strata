@@ -1,9 +1,9 @@
 
 
 import * as THREE from 'three';
-import { isLand } from './strata-globe.js?v=482ef01b2c';
+import { isLand } from './strata-globe.js?v=8bc150354e';
 
-import { createTouchControls } from './touch.js?v=482ef01b2c';
+import { createTouchControls } from './touch.js?v=8bc150354e';
 
 const STEP = 1 / 120;
 const MAX_STEPS = 12;

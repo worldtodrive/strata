@@ -465,6 +465,15 @@
 		background: #232a3a; color: #eaf0fb; border: 1px solid #313a4f;
 		font: 700 12px/1.35 ui-monospace, "Cascadia Mono", Consolas, monospace;
 	}
+	html, body, body * { touch-action: manipulation; }
+	#menu-head #menu-home {
+		display: inline-flex; align-items: center; gap: 6px;
+		margin-left: 6px; padding: 5px 12px 5px 9px; cursor: pointer;
+		background: #fff; color: #000; border: 1px solid #fff; border-radius: 6px;
+		font: 700 12px ui-monospace, Consolas, monospace;
+	}
+	#menu-head #menu-home:hover { background: #dfe6f2; border-color: #dfe6f2; }
+	#menu-head #menu-home svg { width: 14px; height: 14px; flex: none; }
 </style>
 <script type="importmap">
 {
@@ -622,6 +631,7 @@
 			<button class="tab on" data-page="settings">Settings</button>
 			<button class="tab" data-page="controls">Controls</button>
 			<button class="tab" data-page="about">About</button>
+			<button id="menu-home" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 10l5 5"/><path d="M5 10h9a5 5 0 0 1 0 10h-3"/></svg>Home Screen</button>
 			<button id="menu-close" title="close (` or Esc)">&times;</button>
 		</div>
 		<div id="menu-body">
@@ -684,7 +694,7 @@
 					<b>Rapier</b> 0.19.3 (Apache-2.0), with meshes compressed by
 					<b>meshoptimizer</b> 1.0.1 (MIT). Full license texts ship in
 					vendor/ alongside the libraries.</p>
-				<p class="dim">build 2026-09-16 &middot; 482ef01b2c</p>
+				<p class="dim">build 2026-09-16 &middot; 8bc150354e</p>
 			</section>
 
 		</div>
@@ -774,7 +784,7 @@
 	}());
 </script>
 <script type="module">
-	const BUILD = '482ef01b2c';
+	const BUILD = '8bc150354e';
 	const MODULE_ERR = /dynamically imported module|does not provide an export named|importing a module script failed|import not found|binding name .* is not found/i;
 	let reloading = false;
 	function updateButton() {
@@ -814,10 +824,20 @@
 		const hud = document.getElementById('hud');
 		if (hud) hud.textContent = msg;
 	}
+	for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+		document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+	}
+	const home = document.getElementById('menu-home');
+	if (home) {
+		home.addEventListener('click', () => {
+			if (history.state && history.state.strata === 'level') history.back();
+			else location.replace(location.pathname);
+		});
+	}
 	const isModuleErr = (e) => MODULE_ERR.test(String(e && e.message ? e.message : e));
 	window.addEventListener('unhandledrejection', (e) => { if (isModuleErr(e.reason)) recover(e.reason); });
 	window.addEventListener('error', (e) => { if (isModuleErr(e.error || e.message)) recover(e.error || e.message); });
-	const drive = () => { driving = true; return import('./drive.js?v=482ef01b2c').catch(recover); };
+	const drive = () => { driving = true; return import('./drive.js?v=8bc150354e').catch(recover); };
 	const choose = (cut) => {
 		const p = (window.__levels || []).find((l) => l.cut === cut);
 		if (!p) return;
@@ -830,7 +850,7 @@
 	if (window.__levelSource === 'url' || window.__levelSource === 'resume') {
 		drive();
 	} else {
-		import('./title.js?v=482ef01b2c')
+		import('./title.js?v=8bc150354e')
 			.then((m) => m.mountTitle({
 				levels: window.__levels,
 				onPick: (cut) => {

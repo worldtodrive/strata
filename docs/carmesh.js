@@ -1,8 +1,8 @@
 
 
 import * as THREE from 'three';
-import { newGLTFLoader } from './glbload.js?v=482ef01b2c';
-import { buildRimGeometry, buildBrakeGeometry, RIM_STYLES } from './rimmesh.js?v=482ef01b2c';
+import { newGLTFLoader } from './glbload.js?v=8bc150354e';
+import { buildRimGeometry, buildBrakeGeometry, RIM_STYLES } from './rimmesh.js?v=8bc150354e';
 
 const RIM_STYLE = (qs('rim') || 'dish').toLowerCase();
 

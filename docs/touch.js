@@ -171,6 +171,7 @@ export function createTouchControls({ root, onZoom, onMenu, onReset, busy }) {
 	};
 	zone.addEventListener('pointerup', dropStick);
 	zone.addEventListener('pointercancel', dropStick);
+	zone.addEventListener('lostpointercapture', dropStick);
 
 	const held = { gas: new Set(), brake: new Set(),
 		left: new Set(), right: new Set() };
@@ -194,6 +195,8 @@ export function createTouchControls({ root, onZoom, onMenu, onReset, busy }) {
 		};
 		el.addEventListener('pointerup', up);
 		el.addEventListener('pointercancel', up);
+
+		el.addEventListener('lostpointercapture', up);
 	};
 	bindPedal(gasEl, 'gas');
 	bindPedal(brakeEl, 'brake');
@@ -311,6 +314,13 @@ export function createTouchControls({ root, onZoom, onMenu, onReset, busy }) {
 		pinchDist = 0;
 		resetId = null;
 	};
+
+	const releaseIfEmpty = (e) => { if (e.touches.length === 0) reset(); };
+	window.addEventListener('touchend', releaseIfEmpty, { passive: true });
+	window.addEventListener('touchcancel', releaseIfEmpty, { passive: true });
+	document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); });
+	window.addEventListener('pagehide', reset);
+	window.addEventListener('blur', reset);
 
 	return {
 		root,

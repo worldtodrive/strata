@@ -1,7 +1,7 @@
 
 
 import * as THREE from './vendor/three.module.js';
-import { bodyGeometry, carPaint, npcSizeFor } from './npctraffic.js?v=482ef01b2c';
+import { bodyGeometry, carPaint, npcSizeFor } from './npctraffic.js?v=8bc150354e';
 
 const FILL = 0.5;
 
