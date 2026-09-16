@@ -1,8 +1,8 @@
 
 
 import * as THREE from 'three';
-import { newGLTFLoader } from './glbload.js?v=fe60bf82c4';
-import { buildRimGeometry, buildBrakeGeometry, RIM_STYLES } from './rimmesh.js?v=fe60bf82c4';
+import { newGLTFLoader } from './glbload.js?v=8bc150354e';
+import { buildRimGeometry, buildBrakeGeometry, RIM_STYLES } from './rimmesh.js?v=8bc150354e';
 
 const RIM_STYLE = (qs('rim') || 'dish').toLowerCase();
 
@@ -31,7 +31,7 @@ export const GLB_URL = new URL(
 
 function qs(name) {
 	if (typeof location === 'undefined') return null;
-	return new URLSearchParams(location.search).get(name);
+	return new URLSearchParams("").get(name);
 }
 
 function qsNum(name, dflt) {
@@ -62,7 +62,7 @@ const LAMPS = [
 
 const LAMP_GAIN = (() => {
 	if (typeof location === 'undefined') return 1;
-	const v = Number(new URLSearchParams(location.search).get('lamppeak'));
+	const v = Number(new URLSearchParams("").get('lamppeak'));
 	return (Number.isFinite(v) && v > 0) ? v : 1;
 })();
 
@@ -127,7 +127,7 @@ const PART_KNOBS = (() => {
 		if (v) out[k] = v;
 	}
 	if (typeof location !== 'undefined') {
-		for (const raw of new URLSearchParams(location.search).getAll('part')) {
+		for (const raw of new URLSearchParams("").getAll('part')) {
 			const m = /^\s*([A-Za-z0-9_]+)\s*=\s*(#?[0-9A-Fa-f]{6}|[a-z]+)\s*$/.exec(raw);
 			if (m) out[m[1]] = m[2].toLowerCase().replace(/^#/, '');
 		}

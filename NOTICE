@@ -10,6 +10,12 @@ MAP DATA
 ELEVATION
     Derived from public-domain national survey data.
 
+COASTLINES
+    Natural Earth 1:110m Physical Vectors, Land. Public domain.
+    https://www.naturalearthdata.com/
+    https://www.naturalearthdata.com/about/terms-of-use/
+    Drawn as the globe on the title screen (docs/world.json).
+
 VEHICLE MODEL
     "Generic Supercar 'Cheetah'" by mk2design.
     https://sketchfab.com/3d-models/generic-supercar-cheetah-f5420af7b30c4e8c874be33cc58724f2

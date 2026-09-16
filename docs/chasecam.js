@@ -394,7 +394,7 @@ export const CAMERA_ORDER_V2 = ['std', 'firm'];
 
 let classicCams = (() => {
 	if (typeof location === 'undefined') return true;
-	const v = new URLSearchParams(location.search).get('newcams');
+	const v = new URLSearchParams("").get('newcams');
 	return !(v !== null && v !== '0' && v !== 'off');
 })();
 export function setClassicCameras(v) { classicCams = !!v; }
@@ -413,7 +413,7 @@ export function defaultCamera(touch = false) {
 
 const CAM_TUNE = (() => {
 	if (typeof location === 'undefined') return {};
-	const q = new URLSearchParams(location.search);
+	const q = new URLSearchParams("");
 	const num = (k) => {
 		const v = Number(q.get(k));
 		return q.get(k) !== null && Number.isFinite(v) ? v : undefined;
@@ -429,7 +429,7 @@ const CAM_TUNE = (() => {
 const CAM_TUNE_BY_NAME = (() => {
 	const out = {};
 	if (typeof location === 'undefined') return out;
-	for (const raw of new URLSearchParams(location.search).getAll('camtune')) {
+	for (const raw of new URLSearchParams("").getAll('camtune')) {
 
 		const m = /^\s*([A-Za-z][A-Za-z0-9]*)\.(fwd|up|side|pitch|fov|liftPow|back|frameBelow|tiltNear|tiltFar|zoomNear|zoomFar|lookLagY|lookLag|lagY|lag)\s*=\s*(-?[\d.]+)\s*$/.exec(raw);
 		if (!m) {
@@ -681,7 +681,7 @@ export function setTiltStops(name, text) {
 
 (() => {
 	if (typeof location === 'undefined') return;
-	for (const raw of new URLSearchParams(location.search).getAll('tiltstops')) {
+	for (const raw of new URLSearchParams("").getAll('tiltstops')) {
 		const i = String(raw).indexOf(':');
 		if (i <= 0) continue;
 		setTiltStops(raw.slice(0, i).trim(), raw.slice(i + 1));
@@ -1047,7 +1047,7 @@ const YAW_FF_LIMIT = 0.45;
 
 let tiltTrim = (() => {
 	if (typeof location === 'undefined') return 0;
-	const v = Number(new URLSearchParams(location.search).get('camtilt'));
+	const v = Number(new URLSearchParams("").get('camtilt'));
 	return Number.isFinite(v) ? THREE.MathUtils.clamp(v, -20, 20) : 0;
 })();
 export function setTiltTrim(deg) {

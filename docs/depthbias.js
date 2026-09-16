@@ -45,7 +45,7 @@ export function biasStackOf(arm) {
 
 export function resolveBiasArm() {
 	if (typeof location === 'undefined') return DEFAULT_BIAS_ARM;
-	const raw = new URLSearchParams(location.search).get('roadbias');
+	const raw = new URLSearchParams("").get('roadbias');
 	if (raw === '0') return 'none';
 	return BIAS_ARMS.some((a) => a.id === raw) ? raw : DEFAULT_BIAS_ARM;
 }

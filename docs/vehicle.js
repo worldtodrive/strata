@@ -8,7 +8,7 @@ const MODULE_STAMP = new URL(import.meta.url).search || '';
 
 function _lampFlag(name, dflt) {
 	if (typeof location === 'undefined') return dflt;
-	const v = new URLSearchParams(location.search).get(name);
+	const v = new URLSearchParams("").get(name);
 	if (v === null) return dflt;
 	return v !== '0' && v !== 'off' && v !== 'false';
 }
@@ -331,7 +331,7 @@ export async function initRapier() {
 }
 
 export const GROUND_FRICTION = (() => {
-	const q = Number(new URLSearchParams(location.search).get('grip'));
+	const q = Number(new URLSearchParams("").get('grip'));
 	return Number.isFinite(q) && q > 0 ? q : 1.0;
 })();
 
@@ -535,7 +535,7 @@ export class Vehicle {
 		});
 
 		this.carMesh = null;
-		import('./carmesh.js?v=fe60bf82c4').then(({ createCarMesh }) => {
+		import('./carmesh.js?v=8bc150354e').then(({ createCarMesh }) => {
 			if (!this.chassis) return;
 			this.carMesh = createCarMesh(scene);
 			this.carMesh.fit(this.half, this.wheels, this._restSusp || 0);

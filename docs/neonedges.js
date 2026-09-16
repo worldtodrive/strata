@@ -5,7 +5,7 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 
-import { WELD_M } from './buildingtint.js?v=fe60bf82c4';
+import { WELD_M } from './buildingtint.js?v=8bc150354e';
 
 const CORE_PX = 0.9;
 const GLOW_PX = 3.2;
