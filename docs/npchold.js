@@ -1,6 +1,6 @@
 
 
-import { isGo } from './signalcontrol.js?v=fe60bf82c4';
+import { isGo } from './signalcontrol.js?v=482ef01b2c';
 
 const STOP_SETBACK_M = 1.6;
 

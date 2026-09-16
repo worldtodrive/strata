@@ -88,6 +88,8 @@
 	}
 	#camlabel .dim { color: #99a3b8; font-weight: 400; }
 	#camlabel.hidden { display: none; }
+
+	html.looking, html.looking * { cursor: none !important; }
 	#speedo {
 		position: fixed; right: 22px; bottom: 22px;
 		pointer-events: auto; cursor: grab; touch-action: none;
@@ -472,7 +474,7 @@
 	}
 }
 </script>
-<script>window.__levels=[{"cut":"highfive","name":"High Five","bytes":49711873,"stamp":"79a7196b34ac"},{"cut":"smu","name":"SMU","bytes":53286100,"stamp":"05fe1019d2dc"},{"cut":"village","name":"The Village","bytes":44422562,"stamp":"3ef19ffd23d9"},{"cut":"oaklawn","name":"Oak Lawn","bytes":37922221,"stamp":"4084a6b5dad6"},{"cut":"whiterock","name":"White Rock Lake","bytes":18050397,"stamp":"234fbb07f6a8"}];window.__carBytes=1934124;(function(){var L=window.__levels,s=null;try{s=localStorage.getItem("strata.level");}catch(e){}var p=null;for(var i=0;i<L.length;i++){if(L[i].cut===s){p=L[i];break;}}if(!p)p=L[0];window.__level=p.cut;window.__levelName=p.name;window.__payloadBytes=p.bytes+window.__carBytes;window.__dataStamp=p.stamp;})();</script>
+<script>window.__levels=[{"cut":"highfive","name":"High Five","bytes":51651123,"stamp":"ef5b19a0e2dd"},{"cut":"smu","name":"SMU","bytes":51322502,"stamp":"35be8023eed6"},{"cut":"village","name":"The Village","bytes":46303159,"stamp":"0b7f6a2552ee"},{"cut":"oaklawn","name":"Oak Lawn","bytes":36613059,"stamp":"df39b3abd51d"},{"cut":"whiterock","name":"White Rock Lake","bytes":17622460,"stamp":"91eb43d08d7f"}];window.__carBytes=1934124;(function(){var L=window.__levels,u=null,s=null,r=null;try{u=new URLSearchParams(location.search).get("level");}catch(e){}try{s=localStorage.getItem("strata.level");}catch(e){}try{r=sessionStorage.getItem("strata.resume");sessionStorage.removeItem("strata.resume");}catch(e){}function f(v){if(!v)return null;v=String(v).toLowerCase();for(var i=0;i<L.length;i++){if(L[i].cut.toLowerCase()===v)return L[i];}return null;}var a=f(u),b=f(s),p=a||b||L[0];window.__levelSource=a?"url":b&&r?"resume":b?"saved":"default";window.__level=p.cut;window.__levelName=p.name;window.__payloadBytes=p.bytes+window.__carBytes;window.__dataStamp=p.stamp;})();</script>
 <style>
 @media all and (display-mode: standalone) {
 	#hud { padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
@@ -513,6 +515,7 @@
 
 		function paint() {
 			if (!el.fill) return;
+			total = Number(window.__payloadBytes) || 0;
 			var pct;
 			if (total > 0) {
 				pct = Math.min(99, got / total * 100);
@@ -670,15 +673,18 @@
 					>OpenStreetMap</a> contributors, licensed under the
 					<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>.
 					Elevation from public-domain national survey data.</p>
+				<p>Coastlines on the title screen from
+					<a href="https://www.naturalearthdata.com/">Natural Earth</a> (public domain).</p>
 				<p><b>Generic Supercar &lsquo;Cheetah&rsquo;</b> by <b>mk2design</b>, from
 					<a href="https://sketchfab.com/3d-models/generic-supercar-cheetah-f5420af7b30c4e8c874be33cc58724f2"
 					>Sketchfab</a>, licensed under
 					<a href="https://creativecommons.org/licenses/by/4.0/">CC&nbsp;BY&nbsp;4.0</a>
 					and modified for this game.</p>
 				<p class="dim">Rendered with <b>three.js</b> r160 (MIT) and
-					<b>Rapier</b> 0.19.3 (Apache-2.0). Full license texts ship in
+					<b>Rapier</b> 0.19.3 (Apache-2.0), with meshes compressed by
+					<b>meshoptimizer</b> 1.0.1 (MIT). Full license texts ship in
 					vendor/ alongside the libraries.</p>
-				<p class="dim">build 2026-09-13 &middot; fe60bf82c4</p>
+				<p class="dim">build 2026-09-16 &middot; 482ef01b2c</p>
 			</section>
 
 		</div>
@@ -768,7 +774,7 @@
 	}());
 </script>
 <script type="module">
-	const BUILD = 'fe60bf82c4';
+	const BUILD = '482ef01b2c';
 	const MODULE_ERR = /dynamically imported module|does not provide an export named|importing a module script failed|import not found|binding name .* is not found/i;
 	let reloading = false;
 	function updateButton() {
@@ -778,9 +784,15 @@
 		b.textContent = 'A new version is available. Reload';
 		b.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:100000;'
 			+ 'padding:8px 14px;border:0;border-radius:6px;background:#222;color:#fff;font:14px sans-serif;cursor:pointer';
-		b.addEventListener('click', () => location.reload());
+		b.addEventListener('click', () => { resume(); location.reload(); });
 		document.body.appendChild(b);
 	}
+	let driving = false;
+	const resume = () => { try { sessionStorage.setItem('strata.resume', '1'); } catch (e) {   } };
+	window.addEventListener('popstate', (e) => {
+		if (e.state && e.state.strata === 'level') resume();
+		location.reload();
+	});
 	function recover(err) {
 		console.error(err);
 		if (reloading) return;
@@ -792,6 +804,7 @@
 			try {
 				sessionStorage.setItem('strata.reload', BUILD);
 				reloading = true;
+				if (driving) resume();
 				location.reload();
 				return;
 			} catch (e) {   }
@@ -804,7 +817,34 @@
 	const isModuleErr = (e) => MODULE_ERR.test(String(e && e.message ? e.message : e));
 	window.addEventListener('unhandledrejection', (e) => { if (isModuleErr(e.reason)) recover(e.reason); });
 	window.addEventListener('error', (e) => { if (isModuleErr(e.error || e.message)) recover(e.error || e.message); });
-	import('./drive.js?v=fe60bf82c4').catch(recover);
+	const drive = () => { driving = true; return import('./drive.js?v=482ef01b2c').catch(recover); };
+	const choose = (cut) => {
+		const p = (window.__levels || []).find((l) => l.cut === cut);
+		if (!p) return;
+		window.__level = p.cut;
+		window.__levelName = p.name;
+		window.__payloadBytes = p.bytes + window.__carBytes;
+		window.__dataStamp = p.stamp;
+		try { localStorage.setItem('strata.level', p.cut); } catch (e) {   }
+	};
+	if (window.__levelSource === 'url' || window.__levelSource === 'resume') {
+		drive();
+	} else {
+		import('./title.js?v=482ef01b2c')
+			.then((m) => m.mountTitle({
+				levels: window.__levels,
+				onPick: (cut) => {
+					try { history.pushState({ strata: 'level' }, ''); } catch (e) {   }
+					choose(cut);
+					drive();
+				},
+			}))
+			.catch((err) => {
+				if (isModuleErr(err)) { recover(err); return; }
+				console.error(err);
+				drive();
+			});
+	}
 </script>
 </body>
 </html>

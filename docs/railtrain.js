@@ -267,9 +267,55 @@ export function buildRailTrains(THREE, scene, data, dials = TRAIN) {
 	}
 
 	let clock = 0;
+
+	function watch(x, y, reachM = 8) {
+		const hits = [];
+		for (const lane of lanes) {
+			const { r, trip } = lane;
+			let best = Infinity, at = 0;
+			for (let i = 0; i < r.pts.length - 1; i++) {
+				const a = r.pts[i], b = r.pts[i + 1];
+				const dx = b[0] - a[0], dy = b[1] - a[1];
+				const len2 = dx * dx + dy * dy || 1;
+				const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / len2));
+				const d = Math.hypot(a[0] + dx * t - x, a[1] + dy * t - y);
+				if (d < best) { best = d; at = r.s[i] + t * (r.s[i + 1] - r.s[i]); }
+			}
+			if (best > reachM) continue;
+			let arrive = -1, clear = -1;
+			for (let i = 0; i < trip.table.length; i++) {
+				if (arrive < 0 && trip.table[i] >= at) arrive = i * trip.dt;
+				if (trip.table[i] - trip.trainM >= at) { clear = i * trip.dt; break; }
+			}
+			if (arrive < 0) continue;
+			if (clear < 0) clear = trip.duration;
+			hits.push({ lane, arrive, clear });
+		}
+		if (!hits.length) return null;
+		return {
+			routes: hits.length,
+
+			eta(leadS, tailS) {
+				let soonest = Infinity;
+				for (const { lane, arrive, clear } of hits) {
+					const t = clock + lane.offset;
+					const newest = Math.floor(t / dials.headwayS);
+
+					for (let k = -1; k < lane.trains.length; k++) {
+						const tripT = t - (newest - k) * dials.headwayS;
+						if (tripT < arrive - leadS || tripT > clear + tailS) continue;
+						soonest = Math.min(soonest, Math.max(0, arrive - tripT));
+					}
+				}
+				return soonest;
+			},
+		};
+	}
+
 	return {
 		group,
 		routes,
+		watch,
 		report: `${routes.length} route(s) `
 			+ routes.map((r) => `${Math.round(r.length)} m/${r.stops.length} stop(s)`).join(', ')
 			+ `, a train every ${dials.headwayS} s`,

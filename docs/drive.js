@@ -1,7 +1,7 @@
 const LEVEL_NAME = (typeof window !== 'undefined' && window.__levelName) || "Strata 01";
 
 import * as THREE from 'three';
-import { newGLTFLoader } from './glbload.js?v=fe60bf82c4';
+import { newGLTFLoader } from './glbload.js?v=482ef01b2c';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
@@ -14,8 +14,8 @@ import {
 	setSteerLock, getSteerLock,
 	POWER_LEVELS, setPowerLevel, getPowerLevel, setPower, getPower,
 	CAR_SIZES, CAR_SIZE_KEY, bootCarScale, UNSTICK_DEFAULT,
-} from './vehicle.js?v=fe60bf82c4';
-import { JitterMeter } from './jitter.js?v=fe60bf82c4';
+} from './vehicle.js?v=482ef01b2c';
+import { JitterMeter } from './jitter.js?v=482ef01b2c';
 import {
 	CAMERAS, CAM_ZOOM_STEPS, applyCamera, setLagMode,
 	setViewAngles, setFovTrim, currentFov, VIEW_PITCH_LIMIT, setFrameBelow,
@@ -32,20 +32,20 @@ import {
 	setRigSwing, getRigSwing,
 	setFitCar, getFitCar,
 	setTiltStops,
-} from './chasecam.js?v=fe60bf82c4';
+} from './chasecam.js?v=482ef01b2c';
 import { WORLD_TONES, TONE_CLASSES, toneHex, gradeTone, GRADES, DEFAULT_GRADE,
-	gradeWorld, mixTone } from './tones.js?v=fe60bf82c4';
+	gradeWorld, mixTone } from './tones.js?v=482ef01b2c';
 
-import { TINT_LEVELS, SHADE_LEVELS } from './buildingtint.js?v=fe60bf82c4';
+import { TINT_LEVELS, SHADE_LEVELS } from './buildingtint.js?v=482ef01b2c';
 
-import { WINDOW_SIZES } from './windows.js?v=fe60bf82c4';
+import { WINDOW_SIZES } from './windows.js?v=482ef01b2c';
 
-import { DEFAULT_CAR, CAR_LOOK } from './carmesh.js?v=fe60bf82c4';
+import { DEFAULT_CAR, CAR_LOOK } from './carmesh.js?v=482ef01b2c';
 
 const CHUNK = window.__level;
 
 function _vec3Param(name) {
-	const raw = new URLSearchParams(location.search).get(name);
+	const raw = new URLSearchParams("").get(name);
 	if (!raw) return null;
 	const parts = raw.split(',').map((v) => parseFloat(v));
 	return parts.length === 3 && parts.every(Number.isFinite) ? parts : null;
@@ -85,7 +85,7 @@ const lightFocus = new THREE.Vector3();
 const trafficFocus = new THREE.Vector3();
 
 const TIME_AT_BOOT = (() => {
-	const q = parseFloat(new URLSearchParams(location.search).get('time'));
+	const q = parseFloat(new URLSearchParams("").get('time'));
 	return Number.isFinite(q) ? ((q % 1) + 1) % 1 : 0.36;
 })();
 
@@ -170,7 +170,7 @@ async function applyWindows(want) {
 	if (!layer || !layer.root) return null;
 	if (want && !winMod) {
 		try {
-			winMod = await import('./windows.js?v=fe60bf82c4');
+			winMod = await import('./windows.js?v=482ef01b2c');
 		} catch (err) {
 			console.warn('[windows] unavailable:', err);
 			return null;
@@ -207,7 +207,7 @@ async function applyNeon(want) {
 	if (!layer || !layer.root) return null;
 	if (want && !neonMod) {
 		try {
-			neonMod = await import('./neonedges.js?v=fe60bf82c4');
+			neonMod = await import('./neonedges.js?v=482ef01b2c');
 		} catch (err) {
 			console.warn('[neon] unavailable:', err);
 			return null;
@@ -231,7 +231,7 @@ async function applyBuildingTint(want) {
 	if (!layer || !layer.root) return;
 	if (want && !tintMod) {
 		try {
-			tintMod = await import('./buildingtint.js?v=fe60bf82c4');
+			tintMod = await import('./buildingtint.js?v=482ef01b2c');
 		} catch (err) {
 			console.warn('[buildings] tint unavailable:', err);
 			return;
@@ -577,6 +577,7 @@ function dressScene() {
 	}
 
 	if (signals) lighting.dress(signals.group, { receive: false });
+	if (signs) lighting.dress(signs.group, { receive: false });
 
 	if (forest) lighting.dress(forest.group, { receive: false });
 }
@@ -1535,7 +1536,7 @@ let gridAttached = 0;
 
 async function ensureGridMod() {
 	if (!gridMod) {
-		gridMod = await import('./groundgrid.js?v=fe60bf82c4');
+		gridMod = await import('./groundgrid.js?v=482ef01b2c');
 	}
 	return gridMod;
 }
@@ -1575,7 +1576,7 @@ function applyCoverFlat() {
 
 async function ensureCoverMod() {
 	if (!coverMod) {
-		coverMod = await import('./covercoat.js?v=fe60bf82c4');
+		coverMod = await import('./covercoat.js?v=482ef01b2c');
 	}
 	return coverMod;
 }
@@ -1912,7 +1913,7 @@ async function loadChunk() {
 	chunk.yaw = Math.atan2(-(p1[0] - p0[0]), -(p1[2] - p0[2]));
 }
 
-const ONLY_VARIANT = new URLSearchParams(location.search).get('variant') || 'fused';
+const ONLY_VARIANT = new URLSearchParams("").get('variant') || 'fused';
 
 let signals = null;
 const MODULE_STAMP = new URL(import.meta.url).search || '';
@@ -1922,8 +1923,8 @@ async function loadSignals() {
 
 	if (!chunk || !chunk.meta || !chunk.meta.signals) return;
 	try {
-		const { buildSignals } = await import('./signals.js?v=fe60bf82c4');
-		const upstream = new URLSearchParams(location.search).get('signals') === 'upstream';
+		const { buildSignals } = await import('./signals.js?v=482ef01b2c');
+		const upstream = new URLSearchParams("").get('signals') === 'upstream';
 		signals = await buildSignals(url(`${CHUNK}.signals`, 'json'), { upstream });
 		if (signals) {
 			signals.group.visible = signalsOn;
@@ -1959,7 +1960,7 @@ async function loadGarageCars() {
 
 	if (!chunk || !chunk.meta || !chunk.meta.bays) return;
 	try {
-		const { buildGarageCars } = await import('./garagecars.js?v=fe60bf82c4');
+		const { buildGarageCars } = await import('./garagecars.js?v=482ef01b2c');
 		garageCars = await buildGarageCars(url(`${CHUNK}.garage`, 'json'),
 			{ fill: garageFill, carScale: bootCarScale() });
 		if (garageCars && garageCars.footprints && garageCars.footprints.length) {
@@ -1985,7 +1986,7 @@ async function loadTrees() {
 
 	if (!chunk || !chunk.meta || !chunk.meta.trees) return;
 	try {
-		const { buildTrees } = await import('./trees.js?v=fe60bf82c4');
+		const { buildTrees } = await import('./trees.js?v=482ef01b2c');
 
 		const wanted = chunk.meta.trees && chunk.meta.trees.density;
 		if (typeof wanted === 'number' && wanted >= 0 && wanted <= 1) {
@@ -2014,9 +2015,9 @@ let lamps = null;
 let lampField = null;
 let lampError = '';
 
-let lampMode = new URLSearchParams(location.search).get('lamps') || 'lit';
+let lampMode = new URLSearchParams("").get('lamps') || 'lit';
 
-let lampsByDay = new URLSearchParams(location.search).get('lampsday') === '1';
+let lampsByDay = new URLSearchParams("").get('lampsday') === '1';
 let lampCarAttached = false;
 
 let lampGain = 22;
@@ -2029,8 +2030,8 @@ async function loadLamps() {
 	if (!chunk || !chunk.meta || !chunk.meta.lamps) return;
 	try {
 		const [{ buildLamps }, field] = await Promise.all([
-			import('./lamps.js?v=fe60bf82c4'),
-			import('./lampfield.js?v=fe60bf82c4'),
+			import('./lamps.js?v=482ef01b2c'),
+			import('./lampfield.js?v=482ef01b2c'),
 		]);
 		const { buildLampField, FIELD_GAIN } = field;
 		lampGain = FIELD_GAIN;
@@ -2112,10 +2113,10 @@ async function loadTraffic() {
 	try {
 		const [{ buildLaneGraph, sampleLane }, { buildNpcTraffic, TRAFFIC },
 			{ buildNpcPass, PASSING }, { buildSignalHold }] = await Promise.all([
-			import('./npcgraph.js?v=fe60bf82c4'),
-			import('./npctraffic.js?v=fe60bf82c4'),
-			import('./npcpass.js?v=fe60bf82c4'),
-			import('./npchold.js?v=fe60bf82c4'),
+			import('./npcgraph.js?v=482ef01b2c'),
+			import('./npctraffic.js?v=482ef01b2c'),
+			import('./npcpass.js?v=482ef01b2c'),
+			import('./npchold.js?v=482ef01b2c'),
 		]);
 
 		const graph = buildLaneGraph(await sidecarJson(`${CHUNK}.lanes`));
@@ -2152,7 +2153,7 @@ async function loadRailTrains() {
 	railTrains = null;
 	if (!chunk || !chunk.meta || !chunk.meta.rail) return;
 	try {
-		const { buildRailTrains } = await import('./railtrain.js?v=fe60bf82c4');
+		const { buildRailTrains } = await import('./railtrain.js?v=482ef01b2c');
 		railTrains = buildRailTrains(THREE, scene, await sidecarJson(`${CHUNK}.rail`));
 		if (railTrains) {
 			window.railProbe = () => railTrains && railTrains.probe();
@@ -2160,6 +2161,24 @@ async function loadRailTrains() {
 		}
 	} catch (err) {
 		console.warn('[rail] trains not built:', err && err.message ? err.message : err);
+	}
+}
+
+let signs = null;
+async function loadSigns() {
+	signs = null;
+	if (!chunk || !chunk.meta || !chunk.meta.signs) return;
+	try {
+		const { buildSigns } = await import('./signs.js?v=482ef01b2c');
+		signs = await buildSigns(url(`${CHUNK}.signs`, 'json'), {
+			registerPaint: (mat) => (biasReg ? biasReg.register(mat, 'paint') : mat),
+		});
+		if (signs) {
+			scene.add(signs.group);
+			window.signsProbe = () => signs && signs.probe();
+		}
+	} catch (err) {
+		console.warn('[signs] not drawn:', err && err.message ? err.message : err);
 	}
 }
 
@@ -2277,6 +2296,8 @@ async function loadVariants() {
 
 const keys = Object.create(null);
 window.addEventListener('keydown', (e) => {
+
+	if (e.key === 'Escape' && lookOn) setLook(false);
 	if (handleKey(e)) { e.preventDefault(); return; }
 	keys[e.code] = true;
 });
@@ -2458,7 +2479,7 @@ function applyTouch() {
 
 async function ensureTouch() {
 	if (touchCtl) return touchCtl;
-	const { createTouchControls } = await import('./touch.js?v=fe60bf82c4');
+	const { createTouchControls } = await import('./touch.js?v=482ef01b2c');
 	touchCtl = createTouchControls({
 		root: document.getElementById('touch'),
 
@@ -2467,7 +2488,10 @@ async function ensureTouch() {
 				camZoomWant * r, ZOOM_MIN, ZOOM_MAX);
 		},
 
-		onMenu: () => { if (window.driveMenu) window.driveMenu.toggle(); },
+		onMenu: () => {
+			if (lookOn) setLook(false);
+			if (window.driveMenu) window.driveMenu.toggle();
+		},
 
 		onReset: () => {
 			if (flying) setFlying(false);
@@ -2577,7 +2601,7 @@ let zoomPerWheel = 0.0027;
 
 
 (() => {
-	const q = new URLSearchParams(location.search).get('zoomstep');
+	const q = new URLSearchParams("").get('zoomstep');
 	if (q === null) return;
 	const v = Number(q);
 	if (!Number.isFinite(v) || v <= 0) return;
@@ -2788,19 +2812,21 @@ function wrapYaw(a) {
 }
 const LOOK_EASE = 3.2;
 
-function setLook(on) {
+function setLook(on, fromPad = false) {
 	const want = !!on && !flying;
 	if (want === lookOn) return;
 	lookOn = want;
 	setFreeLook(want);
+
+	document.documentElement.classList.toggle('looking', want);
 	if (want) {
 
 		lookFresh = true;
 		lookDebug = [];
-		if (renderer.domElement.requestPointerLock) {
+		if (!fromPad && renderer.domElement.requestPointerLock) {
 			renderer.domElement.requestPointerLock();
 		}
-		status(renderer.domElement.requestPointerLock
+		status(!fromPad
 			? 'mouselook — move the mouse to look, '
 				+ (lookMode === 'return'
 					? `view returns after ${lookReturnS.toFixed(1)} s. `
@@ -2820,14 +2846,15 @@ const LOOK_MAX_PX = 160;
 
 let lookDebug = [];
 
+window.addEventListener('blur', () => { if (lookOn) setLook(false); });
+
 document.addEventListener('pointerlockchange', () => {
-	const locked = document.pointerLockElement === renderer.domElement;
 
-	if (locked) { lookFresh = true; lookDebug = []; }
-	else if (lookOn) setLook(false);
-	if (!locked) {
-
-		lookIdle = 0;
+	if (document.pointerLockElement === renderer.domElement) {
+		lookFresh = true;
+		lookDebug = [];
+	} else if (lookOn) {
+		setLook(false);
 	}
 });
 
@@ -3121,11 +3148,11 @@ let neonBusy = false;
 
 
 
-const _look = () => CAR_LOOK[(new URLSearchParams(location.search).get('car')
+const _look = () => CAR_LOOK[(new URLSearchParams("").get('car')
 	|| DEFAULT_CAR).toLowerCase()] || {};
-let paintName = (new URLSearchParams(location.search).get('paint')
+let paintName = (new URLSearchParams("").get('paint')
 	|| _look().paint || '').toLowerCase();
-let roofName = (new URLSearchParams(location.search).get('roof') || 'follow').toLowerCase();
+let roofName = (new URLSearchParams("").get('roof') || 'follow').toLowerCase();
 
 function setPaint(name) {
 	paintName = String(name || '').toLowerCase();
@@ -3138,9 +3165,9 @@ function setPaint(name) {
 
 
 
-let spoilerName = (new URLSearchParams(location.search).get('spoiler')
+let spoilerName = (new URLSearchParams("").get('spoiler')
 	|| _look().spoiler || '').toLowerCase();
-let stripeName = (new URLSearchParams(location.search).get('stripe')
+let stripeName = (new URLSearchParams("").get('stripe')
 	|| _look().stripe || '').toLowerCase();
 
 
@@ -3178,7 +3205,7 @@ let lightMode = 'auto';
 let beamsOn = true;
 
 let spoilerOn = ['1', 'on', 'true', 'yes']
-	.includes((new URLSearchParams(location.search).get('spoiler') || '').toLowerCase());
+	.includes((new URLSearchParams("").get('spoiler') || '').toLowerCase());
 
 
 
@@ -3898,7 +3925,7 @@ async function ensureGps() {
 	gpsLoading = true;
 	try {
 
-		const M = await import('./minimap.js?v=fe60bf82c4');
+		const M = await import('./minimap.js?v=482ef01b2c');
 		const { lanes, names: gpsNames } = await ensureGpsData();
 		gps = M.createMinimap({
 			lanes,
@@ -4124,7 +4151,6 @@ function setPerfMode(on) {
 			hudHz,
 			shadowLevel: lighting ? lighting.shadowLevel : null,
 			shadows: lighting ? lighting.shadows : null,
-			clouds: lighting ? lighting.clouds : null,
 			traffic: TRAFFIC_DIALS.on,
 
 			trafficCount: TRAFFIC_DIALS.count,
@@ -4142,14 +4168,13 @@ function setPerfMode(on) {
 		if (lighting) {
 			lighting.shadows = false;
 			lighting.shadowLevel = 'performance';
-			lighting.clouds = 0;
 		}
 
 		TRAFFIC_DIALS.count = 70;
 		TRAFFIC_DIALS.spawnRadius = 400;
 		if (forest) forest.setDraw(350);
 
-		status('PERF ON \u2014 HUD 10 Hz, 70 NPC cars within 400 m, shadows off, no clouds, '
+		status('PERF ON \u2014 HUD 10 Hz, 70 NPC cars within 400 m, shadows off, '
 			+ 'trees culled at 350 m'
 			+ (autoScale ? ' (resolution left on auto)' : ', render 75%')
 			+ '. Press \u0027 again to put every one of them back exactly as it was.');
@@ -4165,7 +4190,6 @@ function setPerfMode(on) {
 			lighting.shadowLevel = perfSaved.shadowLevel;
 
 			if (perfSaved.shadows !== null) lighting.shadows = perfSaved.shadows;
-			lighting.clouds = perfSaved.clouds;
 		}
 		TRAFFIC_DIALS.on = perfSaved.traffic;
 		if (perfSaved.trafficCount != null) TRAFFIC_DIALS.count = perfSaved.trafficCount;
@@ -4412,7 +4436,7 @@ function frame(now) {
 	}
 	padSnap = !!(padNow && padNow.snapView);
 
-	if (padNow && padNow.orbitClick && !padOrbit && !flying) setLook(!lookOn);
+	if (padNow && padNow.orbitClick && !padOrbit && !flying) setLook(!lookOn, true);
 	padOrbit = !!(padNow && padNow.orbitClick);
 
 	if (padNow && padNow.camPitch && !flying) {
@@ -4602,6 +4626,15 @@ function frame(now) {
 			railTrains = null;
 		}
 	}
+	if (signs) {
+		try {
+			signs.update(dt, railTrains);
+		} catch (err) {
+			console.error('[signs] tick threw, removing the crossings:', err);
+			try { scene.remove(signs.group); } catch (e2) {   }
+			signs = null;
+		}
+	}
 
 	jitterAcc += dt;
 	if (jitterAcc > 0.25) { jitterAcc = 0; jitterText = meter.report(car, 1 / FIXED_DT); }
@@ -4627,7 +4660,7 @@ let menuPanels = [];
 
 async function buildMenu() {
 	if (!window.driveMenu) return;
-	const { panel } = await import('./menuui.js?v=fe60bf82c4');
+	const { panel } = await import('./menuui.js?v=482ef01b2c');
 	menuPanels = [];
 	const refreshAll = () => { for (const p of menuPanels) p.refresh(); };
 	const mount = window.driveMenu.mount('settings');
@@ -4644,6 +4677,15 @@ async function buildMenu() {
 			set: (v) => {
 				if (v === window.__level) return;
 				try { localStorage.setItem('strata.level', v); } catch (e) {   }
+
+				try { sessionStorage.setItem('strata.resume', '1'); } catch (e) {   }
+				try {
+					const u = new URL(location.href);
+					if (u.searchParams.has('level')) {
+						u.searchParams.delete('level');
+						history.replaceState(history.state, '', u.toString());
+					}
+				} catch (e) {   }
 				location.reload();
 			},
 		});
@@ -4758,6 +4800,7 @@ async function buildMenu() {
 		get: () => String(car ? car.scale : bootCarScale()),
 		set: (v) => {
 			try { localStorage.setItem(CAR_SIZE_KEY, v); } catch (e) {   }
+			try { sessionStorage.setItem('strata.resume', '1'); } catch (e) {   }
 			location.reload();
 		},
 	});
@@ -4781,7 +4824,7 @@ async function boot() {
 	setLagMode(true);
 
 	try {
-		biasMod = await import('./depthbias.js?v=fe60bf82c4');
+		biasMod = await import('./depthbias.js?v=482ef01b2c');
 		biasReg = new biasMod.BiasRegistry(biasMod.resolveBiasArm());
 		;
 	} catch (err) {
@@ -4796,7 +4839,7 @@ async function boot() {
 	if (gpsOn) ensureGps();
 
 	try {
-		waterMod = await import('./water.js?v=fe60bf82c4');
+		waterMod = await import('./water.js?v=482ef01b2c');
 		waterRings = await waterMod.loadWaterRings(
 			chunk.meta, url(`${CHUNK}.water`, 'json'));
 		if (waterRings) {
@@ -4818,7 +4861,7 @@ async function boot() {
 	applyShown();
 
 	try {
-		if (!waterMod) waterMod = await import('./water.js?v=fe60bf82c4');
+		if (!waterMod) waterMod = await import('./water.js?v=482ef01b2c');
 
 		const wy = chunk.meta && chunk.meta.water && chunk.meta.water.y;
 		waterNearGround = Number.isFinite(wy) && chunk.spawn
@@ -4852,6 +4895,7 @@ async function boot() {
 	await loadLamps();
 	await loadTraffic();
 	await loadRailTrains();
+	await loadSigns();
 
 	car = createVehicle(world, scene, { handling: handlingName });
 
@@ -4862,14 +4906,14 @@ async function boot() {
 	applyWorldTones();
 
 	try {
-		const { createLighting } = await import('./lighting.js?v=fe60bf82c4');
+		const { createLighting } = await import('./lighting.js?v=482ef01b2c');
 		lighting = await createLighting(scene, renderer, { timeOfDay: TIME_AT_BOOT });
 		dressScene();
 
 		applyStyleExtras(lighting.style);
 
 		const cloudsQS = parseFloat(
-			new URLSearchParams(location.search).get('clouds'));
+			new URLSearchParams("").get('clouds'));
 		if (Number.isFinite(cloudsQS)) {
 			lighting.clouds = Math.max(0, Math.min(1, cloudsQS));
 		}
@@ -4914,7 +4958,7 @@ async function boot() {
 	}
 
 	try {
-		padMod = await import('./gamepad.js?v=fe60bf82c4');
+		padMod = await import('./gamepad.js?v=482ef01b2c');
 		if (Number.isFinite(padMod.CAM_ZOOM_RATE)) padZoomRate = padMod.CAM_ZOOM_RATE;
 		if (Number.isFinite(padMod.BRAKE_EXP)) padBrakeExp = padMod.BRAKE_EXP;
 		if (Number.isFinite(padMod.TRIGGER_TOP_LIFT)) padTopLift = padMod.TRIGGER_TOP_LIFT;

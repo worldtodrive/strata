@@ -2,7 +2,7 @@
 
 import * as THREE from 'three';
 
-const CONTROL = import('./signalcontrol.js?v=fe60bf82c4');
+const CONTROL = import('./signalcontrol.js?v=482ef01b2c');
 
 const FAN_PITCH = 1.45;
 
@@ -95,10 +95,16 @@ export async function buildSignals(url, opts = {}) {
 			dx /= reach; dz /= reach;
 		}
 		const pitch = FAN_PITCH * g.head_width_m;
+
+		const LEFTNESS = [1, 2, 0, 3];
+		const leftward = dx * Math.sin(yaw) + dz * Math.cos(yaw) > 0;
+		const order = grp.map((hi, j) => [LEFTNESS[heads[hi][9] || 0] ?? 1, j, hi])
+			.sort((a, b) => (leftward ? a[0] - b[0] : b[0] - a[0]) || a[1] - b[1])
+			.map((e) => e[2]);
 		let far = reach;
-		for (let j = 0; j < grp.length; j++) {
-			const t = (j - (grp.length - 1) / 2) * pitch;
-			place[grp[j]] = { x: hx + dx * t, y: hy, z: hz + dz * t, yaw };
+		for (let j = 0; j < order.length; j++) {
+			const t = (j - (order.length - 1) / 2) * pitch;
+			place[order[j]] = { x: hx + dx * t, y: hy, z: hz + dz * t, yaw };
 			far = Math.max(far, reach + t);
 		}
 		gantries.push({ mastX, mastZ, roadY, headY: hy, reach: far, dx, dz });
@@ -174,10 +180,86 @@ export async function buildSignals(url, opts = {}) {
 		}
 	}
 
+	const arrowHeads = [];
+	for (let i = 0; i < n; i++) if (heads[i][9] >= 1 && heads[i][9] <= 3) arrowHeads.push(i);
+	let masks = null;
+	let uturnMasks = null;
+	if (arrowHeads.length) {
+
+		function stencil(draw) {
+			const canvas = document.createElement('canvas');
+			canvas.width = canvas.height = 128;
+			const ctx = canvas.getContext('2d');
+			ctx.fillStyle = '#fff';
+			ctx.fillRect(0, 0, 128, 128);
+			ctx.globalCompositeOperation = 'destination-out';
+			ctx.fillStyle = ctx.strokeStyle = '#000';
+			draw(ctx);
+			const tex = new THREE.CanvasTexture(canvas);
+			tex.colorSpace = THREE.SRGBColorSpace;
+			return tex;
+		}
+		const arrowTex = stencil((ctx) => {
+			ctx.fillRect(56, 49, 54, 30);
+			ctx.beginPath();
+			ctx.moveTo(14, 64); ctx.lineTo(62, 22); ctx.lineTo(62, 106); ctx.closePath();
+			ctx.fill();
+		});
+
+		const uturnTex = stencil((ctx) => {
+			ctx.lineWidth = 22;
+			ctx.lineCap = 'butt';
+			ctx.beginPath();
+			ctx.moveTo(88, 106);
+			ctx.lineTo(88, 58);
+			ctx.arc(62, 58, 26, 0, Math.PI, true);
+			ctx.lineTo(36, 70);
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.moveTo(12, 68); ctx.lineTo(60, 68); ctx.lineTo(36, 104); ctx.closePath();
+			ctx.fill();
+		});
+		const plate = lampRadius(g) * 2 * 1.1;
+		const maskGeom = new THREE.PlaneGeometry(plate, plate).rotateY(Math.PI / 2);
+
+		const maskMaterial = (map) => new THREE.MeshStandardMaterial({
+			color: new THREE.Color(p.housing[0], p.housing[1], p.housing[2]),
+			roughness: 0.85, metalness: 0.0, map, alphaTest: 0.5,
+			polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+		});
+		const turning = arrowHeads.filter((i) => heads[i][9] !== 3);
+		const uturning = arrowHeads.filter((i) => heads[i][9] === 3);
+		const maskX = lampX + 0.006;
+		function lay(mesh, list) {
+			list.forEach((i, a) => {
+				const q = place[i];
+				const cos = Math.cos(q.yaw), sin = Math.sin(q.yaw);
+
+				dummy.rotation.set(heads[i][9] === 2 ? Math.PI : 0, q.yaw, 0, 'YXZ');
+				dummy.scale.set(1, 1, 1);
+				for (let k = 0; k < 3; k++) {
+					dummy.position.set(q.x + maskX * cos, q.y + lampY[k], q.z - maskX * sin);
+					dummy.updateMatrix();
+					mesh.setMatrixAt(a * 3 + k, dummy.matrix);
+				}
+			});
+		}
+		if (turning.length) {
+			masks = new THREE.InstancedMesh(maskGeom, maskMaterial(arrowTex), turning.length * 3);
+			lay(masks, turning);
+		}
+		if (uturning.length) {
+			uturnMasks = new THREE.InstancedMesh(maskGeom, maskMaterial(uturnTex), uturning.length * 3);
+			lay(uturnMasks, uturning);
+		}
+		dummy.rotation.set(0, 0, 0, 'XYZ');
+	}
+
 	const group = new THREE.Group();
 	group.name = 'Signals';
 	let triangles = 0;
-	for (const mesh of [poles, arms, housings, lamps]) {
+	for (const mesh of [poles, arms, housings, lamps, masks, uturnMasks]) {
+		if (!mesh) continue;
 		if (!mesh.count) continue;
 
 		mesh.frustumCulled = false;
